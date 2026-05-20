@@ -1,15 +1,42 @@
 'use client';
 
+/**
+ * Semana.tsx — Parte 2
+ *
+ * Mudanças desta parte:
+ *  - Aba Repas: agora é possível adicionar opções personalizadas por slot
+ *  - Opções customizadas guardadas em localStorage ("customMealOptions")
+ *  - Botão + no final de cada slot para adicionar nova opção
+ *  - Botão × para apagar opções customizadas
+ *  - buildTimeline usa as opções customizadas ao montar o subtítulo
+ */
+
 import { useState, useMemo } from 'react';
 import { useLocalStorage } from './hooks';
 import {
   DAYS, DAY_ABBR, TREINO_A, TREINO_B, HOME_WORKOUT, NUTRITION, STUDIES,
-  type Exercise, type SportType,
+  type Exercise, type SportType, type CalendarEvent,
   getSportType, getGymTreino, hasTherapy, sportIcon,
   getWeekId, getDayDate, formatDate,
 } from './data';
 
+// ─────────────────────────────────────────────
+// Tipos
+// ─────────────────────────────────────────────
+
 type Tab = 'schedule' | 'nutrition' | 'studies';
+
+/** Um bloco na timeline diária */
+interface TimelineItem {
+  key: string;
+  time: string;
+  label: string;
+  icon: string;
+  subtitle?: string;    // texto secundário (ex: opção de refeição selecionada)
+  accent: string;       // cor da borda esquerda
+  isMeal?: boolean;     // refeição → estilo verde suave
+  isWork?: boolean;     // trabalho → tem botão de edição
+}
 
 interface Props {
   weekOffset: number;
@@ -18,52 +45,280 @@ interface Props {
   onDayChange: (day: number) => void;
 }
 
-export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayChange }: Props) {
-  const weekId = getWeekId(weekOffset);
-  const today = new Date();
-  const todayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
-  const isCurrentWeek = weekOffset === 0;
+// ─────────────────────────────────────────────
+// Função principal: constrói a timeline do dia
+// ─────────────────────────────────────────────
 
-  // Global settings
-  const [dayOffIndex, setDayOffIndex] = useLocalStorage('dayOff', 5);
-  const [startWithA, setStartWithA] = useLocalStorage('startWithA', true);
+/**
+ * buildTimeline — Monta todos os eventos do dia em ordem cronológica,
+ * incluindo sport, estudo, terapia, refeições e trabalho.
+ *
+ * Recebe o tipo de sport do dia, treino A/B, flags de terapia/trabalho,
+ * o horário de trabalho editado, as seleções de refeição e as opções
+ * customizadas adicionadas pelo utilizador.
+ */
+function buildTimeline(
+  sportType: SportType,
+  treino: 'A' | 'B' | null,
+  therapy: boolean,
+  hasWork: boolean,
+  workTime: { start: string; end: string },
+  mealSel: Record<string, number>,
+  // Opções personalizadas: Record<slotKey, string[]>
+  customOptions: Record<string, string[]>,
+): TimelineItem[] {
+  const items: TimelineItem[] = [];
 
-  // Per-day persistent state (keyed by weekId-dayIndex)
-  const [exerciseChecks, setExerciseChecks] = useLocalStorage<Record<string, boolean[][]>>('exerciseChecks', {});
-  const [sportDone, setSportDone] = useLocalStorage<Record<string, boolean>>('sportDone', {});
-  const [studiesDone, setStudiesDone] = useLocalStorage<Record<string, string[]>>('studiesDone', {});
-  const [mealSelections, setMealSelections] = useLocalStorage<Record<string, Record<string, number>>>('mealSelections', {});
-  const [workHours, setWorkHours] = useLocalStorage<Record<string, { start: string; end: string }>>('workHours', {});
+  // Helper: cria um item de refeição com a opção selecionada já preenchida
+  function mealItem(key: string, time: string): TimelineItem {
+    const meta: Record<string, { label: string; icon: string }> = {
+      breakfast: { label: 'Petit-déjeuner', icon: '🌅' },
+      lunch:     { label: 'Déjeuner',       icon: '☀️' },
+      snack:     { label: 'Collation',      icon: '🍎' },
+      dinner:    { label: 'Dîner',          icon: '🌙' },
+      evening:   { label: 'Collation soir', icon: '⭐' },
+    };
+    const m = meta[key];
+    const idx = mealSel[key] ?? 0;
 
-  const [activeTab, setActiveTab] = useState<Tab>('schedule');
-  const [editingWork, setEditingWork] = useState(false);
-  const [workEditStart, setWorkEditStart] = useState('13:15');
-  const [workEditEnd, setWorkEditEnd] = useState('20:15');
+    // Combina opções base + customizadas para determinar o texto da opção selecionada
+    const baseOptions = NUTRITION[key]?.options ?? [];
+    const custom      = customOptions[key] ?? [];
+    const allOptions  = [...baseOptions, ...custom];
+    const option      = allOptions[idx] ?? allOptions[0] ?? '';
 
-  // Derived state for selected day
-  const dayKey = `${weekId}-${selectedDay}`;
-  const sportType: SportType = getSportType(selectedDay, dayOffIndex);
-  const treino = sportType === 'gym' ? getGymTreino(selectedDay, dayOffIndex, startWithA) : null;
-  const therapy = hasTherapy(selectedDay);
-  const hasWork = selectedDay !== dayOffIndex;
-  const workTime = workHours[dayKey] ?? { start: '13:15', end: '20:15' };
-
-  const exerciseList: Exercise[] | null =
-    sportType === 'gym'
-      ? treino === 'A' ? TREINO_A : TREINO_B
-      : sportType === 'home'
-        ? HOME_WORKOUT
-        : null;
-
-  function getChecks(exIdx: number): boolean[] {
-    const stored = exerciseChecks[dayKey];
-    if (stored?.[exIdx]) return stored[exIdx];
-    return Array(exerciseList![exIdx].sets).fill(false) as boolean[];
+    return {
+      key: `meal_${key}`,
+      time,
+      label: m.label,
+      icon: m.icon,
+      subtitle: option,
+      accent: '#059669',
+      isMeal: true,
+    };
   }
 
+  // ── Bloco de manhã: varia com o tipo de sport ──────────────────────────────
+
+  if (sportType === 'jjb_fixed') {
+    // Quarta e Sexta: JJB às 07h30 (horário fixo do curso)
+    items.push({
+      key: 'jjb', time: '07h30 – 08h30',
+      label: 'JJB — cours fixe', icon: '🥋',
+      subtitle: 'Jiu-Jitsu Brésilien', accent: '#a855f7',
+    });
+    // Estudo do permis depois do sport (regra: sempre depois)
+    items.push({ key: 'permis', time: '08h30 – 09h15', label: 'Étude permis', icon: '📚', accent: '#ef4444' });
+    // Pequeno-almoço após o JJB e o estudo
+    items.push(mealItem('breakfast', '09h15'));
+
+  } else if (sportType === 'jjb_off') {
+    // Dia de folga: JJB em horário livre
+    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6b7280' });
+    items.push({
+      key: 'jjb', time: 'Matin — horaire libre',
+      label: 'JJB — jour de repos', icon: '🥋',
+      subtitle: 'Escolhe o créneau', accent: '#a855f7',
+    });
+    items.push({ key: 'permis', time: 'Após JJB', label: 'Étude permis', icon: '📚', accent: '#ef4444' });
+    items.push(mealItem('breakfast', '09h00'));
+
+  } else if (sportType === 'gym') {
+    // Dias normais: ginásio das 09h às 10h30
+    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6b7280' });
+    items.push({
+      key: 'gym', time: '09h00 – 10h30',
+      label: `Gym — Treino ${treino}`, icon: '💪',
+      subtitle: treino === 'A' ? 'Full Body A' : 'Full Body B', accent: '#3b82f6',
+    });
+
+    // Nos dias de terapia (Ter/Qui), a ordem muda:
+    // ginásio → terapia → permis → pequeno-almoço
+    if (therapy) {
+      items.push({ key: 'therapy', time: '10h45 – 11h45', label: 'Thérapie', icon: '🧠', accent: '#ec4899' });
+      items.push({ key: 'permis', time: '11h45 – 12h15', label: 'Étude permis', icon: '📚', accent: '#ef4444' });
+      items.push(mealItem('breakfast', '12h15'));
+    } else {
+      // Sem terapia: permis logo após o ginásio, depois pequeno-almoço
+      items.push({ key: 'permis', time: '10h30 – 11h30', label: 'Étude permis', icon: '📚', accent: '#ef4444' });
+      items.push(mealItem('breakfast', '11h30'));
+    }
+
+  } else {
+    // Domingo: home workout opcional
+    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6b7280' });
+    items.push(mealItem('breakfast', '08h30'));
+    items.push({
+      key: 'home', time: '09h00 – 10h00',
+      label: 'Home workout (optionnel)', icon: '🏠',
+      subtitle: 'Apoio · Agachamento · Prancha', accent: '#14b8a6',
+    });
+    items.push({ key: 'permis', time: 'Après workout', label: 'Étude permis', icon: '📚', accent: '#ef4444' });
+  }
+
+  // ── Almoço: sempre às 12h30 (antes do trabalho das 13h15) ─────────────────
+  items.push(mealItem('lunch', '12h30'));
+
+  // ── Bloco de tarde/noite: trabalho ou descanso ─────────────────────────────
+  if (hasWork) {
+    // Dia de trabalho: exibe o horário (editável via botão ✏️)
+    const start = workTime.start.replace(':', 'h');
+    const end   = workTime.end.replace(':', 'h');
+    items.push({
+      key: 'work', time: `${start} – ${end}`,
+      label: 'Travail — Grand Frais', icon: '🛒',
+      accent: '#f59e0b', isWork: true,
+    });
+    // Lanche durante o trabalho (~meio do turno)
+    items.push(mealItem('snack', '16h00'));
+    // Jantar depois do trabalho
+    items.push(mealItem('dinner', '20h30'));
+  } else {
+    // Dia de folga
+    items.push({
+      key: 'rest', time: 'Journée entière',
+      label: 'Jour de repos', icon: '🌿',
+      subtitle: 'Repos & récupération', accent: '#10b981',
+    });
+    // Horários de refeição ajustados para dia sem trabalho
+    items.push(mealItem('snack', '15h00'));
+    items.push(mealItem('dinner', '19h30'));
+  }
+
+  // Lanche da noite — sempre
+  items.push(mealItem('evening', '22h00'));
+
+  return items;
+}
+
+// ─────────────────────────────────────────────
+// Função: plano automático de estudos
+// ─────────────────────────────────────────────
+
+/**
+ * computeStudySchedule — Calcula quais estudos são sugeridos para cada dia.
+ *
+ * Lógica:
+ *  1. Conta quantas vezes cada estudo foi feito esta semana
+ *  2. Calcula o que ainda falta (quota - feito)
+ *  3. Distribui as sessões restantes pelos dias futuros (sem sobrecarregar)
+ *
+ * Retorna: Record<dayIndex, string[]> — estudos sugeridos por dia
+ */
+function computeStudySchedule(
+  weekId: string,
+  studiesDone: Record<string, string[]>,
+  todayIndex: number,
+  isCurrentWeek: boolean,
+): Record<number, string[]> {
+  // Passo 1: contar o que foi feito esta semana
+  const doneCounts: Record<string, number> = {};
+  for (let d = 0; d < 7; d++) {
+    const k = `${weekId}-${d}`;
+    (studiesDone[k] ?? []).forEach((id) => {
+      doneCounts[id] = (doneCounts[id] ?? 0) + 1;
+    });
+  }
+
+  // Quota semanal de cada estudo
+  const quotas: Record<string, number> = { permis: 7, sites: 3, prog: 2, brand: 1 };
+
+  // Para a semana atual planeia a partir de hoje; para outras semanas, desde segunda
+  const startDay = isCurrentWeek ? todayIndex : 0;
+  const schedule: Record<number, string[]> = {};
+
+  for (const study of STUDIES) {
+    const quota   = quotas[study.id] ?? 0;
+    const done    = doneCounts[study.id] ?? 0;
+    let remaining = Math.max(0, quota - done);
+
+    // Branding só vai ao domingo (índice 6)
+    if (study.id === 'brand') {
+      if (remaining > 0) schedule[6] = [...(schedule[6] ?? []), study.id];
+      continue;
+    }
+
+    // Distribui as sessões restantes pelos dias disponíveis
+    for (let d = startDay; d < 7 && remaining > 0; d++) {
+      const k = `${weekId}-${d}`;
+      // Salta dias onde este estudo já foi feito
+      if ((studiesDone[k] ?? []).includes(study.id)) continue;
+      schedule[d] = [...(schedule[d] ?? []), study.id];
+      remaining--;
+    }
+  }
+
+  return schedule;
+}
+
+// ─────────────────────────────────────────────
+// Componente principal
+// ─────────────────────────────────────────────
+
+export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayChange }: Props) {
+  // ── Identificação da semana ────────────────────────────────────────────────
+  const weekId      = getWeekId(weekOffset);   // ex: "2025-05-19"
+  const today       = new Date();
+  const todayIndex  = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=Seg…6=Dom
+  const isCurrentWeek = weekOffset === 0;
+
+  // ── Estado global persistido (localStorage) ───────────────────────────────
+  const [dayOffIndex, setDayOffIndex] = useLocalStorage('dayOff', 5);     // sábado padrão
+  const [startWithA, setStartWithA]   = useLocalStorage('startWithA', true); // começa com Treino A
+
+  // Estado por dia, indexado por "weekId-dayIndex"
+  const [exerciseChecks, setExerciseChecks] = useLocalStorage<Record<string, boolean[][]>>('exerciseChecks', {});
+  const [sportDone,  setSportDone]   = useLocalStorage<Record<string, boolean>>('sportDone', {});
+  const [studiesDone, setStudiesDone] = useLocalStorage<Record<string, string[]>>('studiesDone', {});
+  const [mealSelections, setMealSelections] = useLocalStorage<Record<string, Record<string, number>>>('mealSelections', {});
+  const [workHours, setWorkHours]     = useLocalStorage<Record<string, { start: string; end: string }>>('workHours', {});
+
+  // Opções de refeição personalizadas: { breakfast: ["Minha opção", ...], ... }
+  const [customMealOptions, setCustomMealOptions] = useLocalStorage<Record<string, string[]>>('customMealOptions', {});
+
+  // Eventos do calendário (partilhados com Calendario.tsx via mesma chave localStorage)
+  const [calendarEvents] = useLocalStorage<CalendarEvent[]>('calendarEvents', []);
+
+  // ── Estado local (UI) ──────────────────────────────────────────────────────
+  const [activeTab, setActiveTab]     = useState<Tab>('schedule');
+  const [editingWork, setEditingWork] = useState(false);
+  const [workEditStart, setWorkEditStart] = useState('13:15');
+  const [workEditEnd,   setWorkEditEnd]   = useState('20:15');
+
+  // Estado do formulário "adicionar opção de refeição"
+  // addingMeal = qual slot está a ser editado (ex: "breakfast"), ou null
+  const [addingMeal, setAddingMeal]   = useState<string | null>(null);
+  const [newMealText, setNewMealText] = useState('');
+
+  // ── Dados do dia selecionado ───────────────────────────────────────────────
+
+  // Chave única para persistência deste dia nesta semana
+  const dayKey = `${weekId}-${selectedDay}`;
+
+  const sportType: SportType = getSportType(selectedDay, dayOffIndex);
+  const treino   = sportType === 'gym' ? getGymTreino(selectedDay, dayOffIndex, startWithA) : null;
+  const therapy  = hasTherapy(selectedDay);
+  const hasWork  = selectedDay !== dayOffIndex;
+  const workTime = workHours[dayKey] ?? { start: '13:15', end: '20:15' };
+
+  // Lista de exercícios do dia (null = sem treino de ginásio/casa)
+  const exerciseList: Exercise[] | null =
+    sportType === 'gym'  ? (treino === 'A' ? TREINO_A : TREINO_B) :
+    sportType === 'home' ? HOME_WORKOUT : null;
+
+  // ── Helpers de estado ──────────────────────────────────────────────────────
+
+  /** Retorna os checks de um exercício específico do dia selecionado */
+  function getChecks(exIdx: number): boolean[] {
+    // Se não há dados guardados, retorna array de `false` com o tamanho certo
+    return exerciseChecks[dayKey]?.[exIdx] ?? Array(exerciseList![exIdx].sets).fill(false);
+  }
+
+  /** Inverte o estado de uma série específica (ex: 3ª série do Supino) */
   function toggleSet(exIdx: number, setIdx: number) {
-    const current: boolean[][] = exerciseChecks[dayKey] ??
-      exerciseList!.map((ex) => Array(ex.sets).fill(false) as boolean[]);
+    // Cria uma cópia profunda dos checks atuais
+    const current: boolean[][] =
+      exerciseChecks[dayKey] ?? exerciseList!.map((ex) => Array(ex.sets).fill(false));
     const updated = current.map((row, i) =>
       i === exIdx ? row.map((v, j) => (j === setIdx ? !v : v)) : [...row],
     );
@@ -91,93 +346,146 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
     }));
   }
 
+  /** Adiciona uma nova opção customizada a um slot de refeição */
+  function addCustomOption(mealKey: string, text: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setCustomMealOptions((prev) => ({
+      ...prev,
+      [mealKey]: [...(prev[mealKey] ?? []), trimmed],
+    }));
+  }
+
+  /** Remove uma opção customizada pelo seu índice dentro do array custom */
+  function removeCustomOption(mealKey: string, customIdx: number) {
+    setCustomMealOptions((prev) => {
+      const updated = [...(prev[mealKey] ?? [])];
+      updated.splice(customIdx, 1);
+      return { ...prev, [mealKey]: updated };
+    });
+    // Se a opção apagada estava selecionada, volta ao índice 0
+    const baseLen = NUTRITION[mealKey]?.options.length ?? 0;
+    const selectedIdx = mealSel[mealKey] ?? 0;
+    if (selectedIdx === baseLen + customIdx) {
+      setMeal(mealKey, 0);
+    }
+  }
+
   function saveWorkHours() {
     setWorkHours((prev) => ({ ...prev, [dayKey]: { start: workEditStart, end: workEditEnd } }));
     setEditingWork(false);
   }
 
-  // Weekly stats
+  // ── Stats semanais ─────────────────────────────────────────────────────────
+
+  /**
+   * useMemo → só recalcula quando weekId, dayOffIndex, sportDone ou studiesDone mudam.
+   * Evita recalcular a cada render.
+   */
   const weekStats = useMemo(() => {
     let gymDone = 0, gymTotal = 0;
     let jjbDone = 0, jjbTotal = 0;
     let permisDays = 0;
+
     for (let d = 0; d < 7; d++) {
       const sport = getSportType(d, dayOffIndex);
-      const key = `${weekId}-${d}`;
-      if (sport === 'gym') {
-        gymTotal++;
-        if (sportDone[key]) gymDone++;
-      } else if (sport === 'jjb_fixed' || sport === 'jjb_off') {
-        jjbTotal++;
-        if (sportDone[key]) jjbDone++;
-      }
-      if ((studiesDone[key] ?? []).includes('permis')) permisDays++;
+      const k = `${weekId}-${d}`;
+      if (sport === 'gym')                        { gymTotal++; if (sportDone[k]) gymDone++; }
+      else if (sport === 'jjb_fixed' || sport === 'jjb_off') { jjbTotal++; if (sportDone[k]) jjbDone++; }
+      if ((studiesDone[k] ?? []).includes('permis')) permisDays++;
     }
+
     return { gymDone, gymTotal, jjbDone, jjbTotal, permisDays };
   }, [weekId, dayOffIndex, sportDone, studiesDone]);
 
-  // Schedule timeline
-  const scheduleItems = useMemo(() => {
-    const items: { time: string; label: string; icon: string; detail?: string; borderColor: string; isWork?: boolean }[] = [];
-    items.push({ time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', borderColor: '#6b7280' });
-    if (sportType === 'jjb_fixed') {
-      items.push({ time: '07h30 – 08h30', label: 'JJB — cours fixe', icon: '🥋', detail: 'Jiu-Jitsu Brésilien', borderColor: '#a855f7' });
-      items.push({ time: '08h30 – 09h30', label: 'Étude permis', icon: '📚', borderColor: '#ef4444' });
-    } else if (sportType === 'jjb_off') {
-      items.push({ time: 'Matin — horaire libre', label: 'JJB — jour de repos', icon: '🥋', detail: 'Créneau libre', borderColor: '#a855f7' });
-      items.push({ time: 'Après JJB', label: 'Étude permis', icon: '📚', borderColor: '#ef4444' });
-    } else if (sportType === 'gym') {
-      items.push({ time: '09h00 – 10h30', label: `Gym — Treino ${treino}`, icon: '💪', detail: treino === 'A' ? 'Full Body A' : 'Full Body B', borderColor: '#3b82f6' });
-      items.push({ time: '10h30 – 11h30', label: 'Étude permis', icon: '📚', borderColor: '#ef4444' });
-    } else {
-      items.push({ time: '09h00 – 10h00', label: 'Home workout (optionnel)', icon: '🏠', borderColor: '#14b8a6' });
-      items.push({ time: 'Après workout', label: 'Étude permis', icon: '📚', borderColor: '#ef4444' });
-    }
-    if (therapy) {
-      items.push({ time: '10h45 – 11h45', label: 'Thérapie', icon: '🧠', borderColor: '#ec4899' });
-    }
-    if (hasWork) {
-      items.push({
-        time: `${workTime.start.replace(':', 'h')} – ${workTime.end.replace(':', 'h')}`,
-        label: 'Travail — Grand Frais', icon: '🛒', borderColor: '#f59e0b', isWork: true,
-      });
-    } else {
-      items.push({ time: 'Journée entière', label: 'Jour de repos', icon: '🌿', detail: 'Repos & récupération', borderColor: '#10b981' });
-    }
-    return items;
-  }, [selectedDay, dayOffIndex, sportType, treino, therapy, hasWork, workTime]);
+  /**
+   * studySchedule — plano sugerido para toda a semana.
+   * Ex: { 0: ['permis','sites'], 1: ['permis'], 2: ['permis','prog'], ... }
+   * Recalcula quando algum estudo é marcado feito.
+   */
+  const studySchedule = useMemo(
+    () => computeStudySchedule(weekId, studiesDone, todayIndex, isCurrentWeek),
+    [weekId, studiesDone, todayIndex, isCurrentWeek],
+  );
 
+  /**
+   * weekStudyCounts — quantas vezes cada estudo foi feito esta semana.
+   * Usado para mostrar o progresso "X/Y cette semaine".
+   */
+  const weekStudyCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (let d = 0; d < 7; d++) {
+      const k = `${weekId}-${d}`;
+      (studiesDone[k] ?? []).forEach((id) => {
+        counts[id] = (counts[id] ?? 0) + 1;
+      });
+    }
+    return counts;
+  }, [weekId, studiesDone]);
+
+  // ── Dados auxiliares ───────────────────────────────────────────────────────
+
+  // Datas reais de cada dia desta semana (para exibir o número do dia)
   const weekDates = Array.from({ length: 7 }, (_, i) => getDayDate(weekOffset, i));
-  const mealSel = mealSelections[dayKey] ?? {};
+
+  // Seleções de refeição do dia atual
+  const mealSel    = mealSelections[dayKey] ?? {};
+  // Estudos marcados como feitos hoje
   const studiesSel = studiesDone[dayKey] ?? [];
+
+  // Timeline completa do dia (sport + refeições + trabalho)
+  const timeline = buildTimeline(sportType, treino, therapy, hasWork, workTime, mealSel, customMealOptions);
+
+  // Eventos do calendário para o dia selecionado
+  // Converte a data do dia para "YYYY-MM-DD" e filtra
+  const selectedDate = weekDates[selectedDay];
+  const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+  const dayCalendarEvents = calendarEvents
+    .filter((e) => e.date === selectedDateStr)
+    .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
+
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
 
   return (
     <div>
-      {/* Header */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937' }} className="px-4 py-3 sticky top-0 z-10">
-        <div className="max-w-lg mx-auto">
-          {/* Week nav */}
-          <div className="flex items-center justify-between mb-2">
-            <button onClick={() => onWeekChange(weekOffset - 1)} className="px-3 py-1.5 rounded-lg text-sm cursor-pointer" style={{ background: '#1f2937', color: '#9ca3af' }}>←</button>
-            <div className="text-center">
-              <div className="text-sm font-semibold text-white">
-                {isCurrentWeek ? 'Cette semaine' : `${formatDate(weekDates[0])} – ${formatDate(weekDates[6])}`}
+
+      {/* ── HEADER FIXO ────────────────────────────────────────────────────── */}
+      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937', position: 'sticky', top: 0, zIndex: 20 }}>
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: '12px 16px 10px' }}>
+
+          {/* Navegação entre semanas */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <NavBtn onClick={() => onWeekChange(weekOffset - 1)}>‹</NavBtn>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+                {isCurrentWeek
+                  ? 'Cette semaine'
+                  : `${formatDate(weekDates[0])} – ${formatDate(weekDates[6])}`}
               </div>
               {!isCurrentWeek && (
-                <button onClick={() => onWeekChange(0)} className="text-[10px] cursor-pointer" style={{ color: '#60a5fa' }}>
-                  Retour aujourd&apos;hui
+                <button onClick={() => onWeekChange(0)}
+                  style={{ fontSize: 11, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}>
+                  ↩ Aujourd&apos;hui
                 </button>
               )}
             </div>
-            <button onClick={() => onWeekChange(weekOffset + 1)} className="px-3 py-1.5 rounded-lg text-sm cursor-pointer" style={{ background: '#1f2937', color: '#9ca3af' }}>→</button>
+            <NavBtn onClick={() => onWeekChange(weekOffset + 1)}>›</NavBtn>
           </div>
-          {/* Day off */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] shrink-0" style={{ color: '#6b7280' }}>Repos:</span>
-            <div className="flex gap-1">
+
+          {/* Seletor de dia de folga */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: '#6b7280', flexShrink: 0 }}>Repos :</span>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {DAY_ABBR.map((abbr, i) => (
-                <button key={i} onClick={() => setDayOffIndex(i)} className="px-1.5 py-0.5 rounded text-[10px] font-bold cursor-pointer"
-                  style={{ background: dayOffIndex === i ? '#059669' : '#1f2937', color: dayOffIndex === i ? '#fff' : '#6b7280' }}>
+                <button key={i} onClick={() => setDayOffIndex(i)}
+                  style={{
+                    height: 28, padding: '0 8px', borderRadius: 7,
+                    fontSize: 10, fontWeight: 700, border: 'none', cursor: 'pointer',
+                    background: dayOffIndex === i ? '#059669' : '#1f2937',
+                    color:      dayOffIndex === i ? '#fff'    : '#6b7280',
+                  }}>
                   {abbr}
                 </button>
               ))}
@@ -186,151 +494,272 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
         </div>
       </div>
 
-      {/* Day selector */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937' }} className="px-3 py-2">
-        <div className="max-w-lg mx-auto grid grid-cols-7 gap-1">
+      {/* ── GRID DE DIAS ───────────────────────────────────────────────────── */}
+      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937', padding: '10px 12px' }}>
+        <div style={{ maxWidth: 520, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
           {DAYS.map((_, i) => {
-            const sport = getSportType(i, dayOffIndex);
+            const sport     = getSportType(i, dayOffIndex);
             const isSelected = selectedDay === i;
-            const isToday = isCurrentWeek && i === todayIndex;
+            const isToday    = isCurrentWeek && i === todayIndex;
+            const isDone     = !!sportDone[`${weekId}-${i}`];
+
             return (
-              <button key={i} onClick={() => onDayChange(i)} className="relative flex flex-col items-center py-1.5 rounded-xl cursor-pointer transition-all"
-                style={{ background: isSelected ? '#2563eb' : 'rgba(31,41,55,0.6)', color: isSelected ? '#fff' : '#9ca3af' }}>
-                {isToday && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full" style={{ background: '#60a5fa' }} />}
-                <span className="text-[9px] font-bold">{DAY_ABBR[i]}</span>
-                <span className="text-[11px]" style={{ color: isSelected ? '#bfdbfe' : '#4b5563' }}>{weekDates[i].getDate()}</span>
-                <span className="text-xs">{sportIcon(sport)}</span>
-                {sportDone[`${weekId}-${i}`] && <span style={{ color: '#22c55e', fontSize: 8 }}>✓</span>}
+              <button key={i} onClick={() => onDayChange(i)}
+                style={{
+                  position: 'relative',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center',
+                  padding: '8px 2px', borderRadius: 14, border: 'none',
+                  cursor: 'pointer', minHeight: 62,
+                  background: isSelected ? '#2563eb' : 'rgba(31,41,55,0.7)',
+                  color: isSelected ? '#fff' : '#9ca3af',
+                  // Sombra azul suave no dia selecionado
+                  boxShadow: isSelected ? '0 4px 20px rgba(37,99,235,0.3)' : undefined,
+                }}>
+
+                {/* Ponto azul = hoje */}
+                {isToday && (
+                  <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: '50%', background: '#93c5fd' }} />
+                )}
+
+                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em' }}>{DAY_ABBR[i]}</span>
+                <span style={{ fontSize: 11, color: isSelected ? '#bfdbfe' : '#4b5563', marginTop: 1 }}>{weekDates[i].getDate()}</span>
+                <span style={{ fontSize: 16, marginTop: 2 }}>{sportIcon(sport)}</span>
+
+                {/* Check verde se o treino foi marcado como feito */}
+                {isDone && <span style={{ fontSize: 9, color: '#4ade80', marginTop: 1, fontWeight: 900 }}>✓</span>}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* ── ABAS ────────────────────────────────────────────────────────────── */}
       <div style={{ background: '#111118', borderBottom: '1px solid #1f2937' }}>
-        <div className="max-w-lg mx-auto flex">
+        <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex' }}>
           {(['schedule', 'nutrition', 'studies'] as Tab[]).map((tab) => (
-            <button key={tab} onClick={() => setActiveTab(tab)} className="flex-1 py-2.5 text-[11px] font-semibold uppercase tracking-wide cursor-pointer"
-              style={{ color: activeTab === tab ? '#60a5fa' : '#6b7280', borderBottom: activeTab === tab ? '2px solid #60a5fa' : '2px solid transparent' }}>
-              {tab === 'schedule' ? '📅 Planning' : tab === 'nutrition' ? '🥗 Nutrition' : '📚 Études'}
+            <button key={tab} onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1, height: 44,
+                fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                border: 'none', background: 'none', cursor: 'pointer',
+                color: activeTab === tab ? '#60a5fa' : '#6b7280',
+                borderBottom: activeTab === tab ? '2px solid #60a5fa' : '2px solid transparent',
+              }}>
+              {tab === 'schedule' ? '📅 Planning' : tab === 'nutrition' ? '🥗 Repas' : '📚 Études'}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-lg mx-auto px-4 py-4 pb-6">
+      {/* ── CONTEÚDO ─────────────────────────────────────────────────────────── */}
+      <div style={{ maxWidth: 520, margin: '0 auto', padding: '16px 16px 32px' }}>
 
-        {/* --- SCHEDULE --- */}
+        {/* ════════════════════════════════════════
+            ABA: PLANNING
+            ════════════════════════════════════════ */}
         {activeTab === 'schedule' && (
           <div>
-            {/* Day header */}
-            <div className="flex items-center justify-between mb-4">
+
+            {/* Cabeçalho do dia */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
               <div>
-                <h2 className="text-lg font-bold text-white">{DAYS[selectedDay]} <span className="text-sm font-normal" style={{ color: '#6b7280' }}>{formatDate(weekDates[selectedDay])}</span></h2>
-                {therapy && <p className="text-xs mt-0.5" style={{ color: '#ec4899' }}>🧠 Thérapie 10h45</p>}
-              </div>
-              <div className="flex gap-2 items-center">
-                {sportType === 'gym' && (
-                  <button onClick={() => setStartWithA(!startWithA)} className="text-xs px-2 py-1 rounded-lg cursor-pointer font-bold"
-                    style={{ background: '#1f2937', border: '1px solid #374151', color: '#60a5fa' }}>
-                    Treino {startWithA ? 'A' : 'B'}
-                  </button>
+                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>
+                  {DAYS[selectedDay]}
+                  <span style={{ fontSize: 13, fontWeight: 400, color: '#6b7280', marginLeft: 8 }}>
+                    {formatDate(weekDates[selectedDay])}
+                  </span>
+                </h2>
+                {therapy && (
+                  <div style={{ fontSize: 12, color: '#ec4899', marginTop: 4 }}>🧠 Thérapie 10h45</div>
                 )}
+              </div>
+
+              {/* Botão de alternância Treino A/B — só aparece em dias de ginásio */}
+              <div style={{ display: 'flex', gap: 8 }}>
+                {sportType === 'gym' && (
+                  <SmallBtn onClick={() => setStartWithA(!startWithA)} color="#60a5fa">
+                    Treino {startWithA ? 'A' : 'B'}
+                  </SmallBtn>
+                )}
+                {/* Botão para marcar o treino do dia como feito */}
                 {exerciseList && (
-                  <button onClick={toggleSport} className="text-xs px-2 py-1 rounded-lg cursor-pointer font-semibold"
-                    style={{
-                      background: sportDone[dayKey] ? '#065f46' : '#1f2937',
-                      border: `1px solid ${sportDone[dayKey] ? '#10b981' : '#374151'}`,
-                      color: sportDone[dayKey] ? '#6ee7b7' : '#9ca3af',
-                    }}>
-                    {sportDone[dayKey] ? '✓ Feito' : 'Marcar feito'}
-                  </button>
+                  <SmallBtn
+                    onClick={toggleSport}
+                    color={sportDone[dayKey] ? '#4ade80' : '#6b7280'}
+                    active={!!sportDone[dayKey]}>
+                    {sportDone[dayKey] ? '✓ Feito' : 'Marcar'}
+                  </SmallBtn>
                 )}
               </div>
             </div>
 
-            {/* Timeline */}
-            <div className="space-y-2 mb-5">
-              {scheduleItems.map((item, i) => (
-                <div key={i} className="flex items-start gap-3 rounded-xl p-3"
-                  style={{ background: '#111118', borderLeft: `2px solid ${item.borderColor}` }}>
-                  <span className="text-lg shrink-0">{item.icon}</span>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[11px] font-medium" style={{ color: '#6b7280' }}>{item.time}</div>
-                    <div className="text-sm font-semibold text-white">{item.label}</div>
-                    {item.detail && <div className="text-xs mt-0.5" style={{ color: '#9ca3af' }}>{item.detail}</div>}
+            {/* ── TIMELINE ─────────────────────────────────────── */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 24 }}>
+              {timeline.map((item) => (
+                <div key={item.key}
+                  style={{
+                    display: 'flex', alignItems: 'flex-start', gap: 12,
+                    // Refeições têm fundo verde muito suave; os outros têm o fundo padrão
+                    background: item.isMeal ? 'rgba(5,46,22,0.25)' : '#111118',
+                    borderLeft: `3px solid ${item.accent}`,
+                    borderRadius: 12,
+                    padding: '10px 14px',
+                  }}>
+
+                  {/* Ícone do evento */}
+                  <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{item.icon}</span>
+
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Hora */}
+                    <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 2 }}>
+                      {item.time}
+                    </div>
+                    {/* Título */}
+                    <div style={{ fontSize: 14, fontWeight: 600, color: item.isMeal ? '#a7f3d0' : '#f3f4f6' }}>
+                      {item.label}
+                    </div>
+                    {/* Subtítulo — para refeições mostra a opção selecionada; para outros mostra descrição */}
+                    {item.subtitle && (
+                      <div style={{
+                        fontSize: 12,
+                        color: item.isMeal ? '#6ee7b7' : '#9ca3af',
+                        marginTop: 2,
+                        // Evita que texto longo quebre o layout
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {item.subtitle}
+                      </div>
+                    )}
                   </div>
+
+                  {/* Botão de edição do horário de trabalho */}
                   {item.isWork && hasWork && !editingWork && (
-                    <button onClick={() => { setWorkEditStart(workTime.start); setWorkEditEnd(workTime.end); setEditingWork(true); }}
-                      className="text-sm px-2 py-1 rounded cursor-pointer shrink-0"
-                      style={{ background: '#1f2937', color: '#9ca3af' }}>✏️</button>
+                    <button
+                      onClick={() => { setWorkEditStart(workTime.start); setWorkEditEnd(workTime.end); setEditingWork(true); }}
+                      style={{ width: 36, height: 36, borderRadius: 9, background: '#1f2937', border: 'none', fontSize: 14, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      ✏️
+                    </button>
                   )}
                 </div>
               ))}
             </div>
 
-            {/* Edit work hours */}
-            {editingWork && hasWork && (
-              <div className="rounded-xl p-4 mb-4" style={{ background: '#111118', border: '1px solid #f59e0b50' }}>
-                <p className="text-xs font-semibold mb-3" style={{ color: '#f59e0b' }}>✏️ Éditer horaire travail</p>
-                <div className="flex items-center gap-3">
-                  <input type="time" value={workEditStart} onChange={(e) => setWorkEditStart(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg text-sm"
-                    style={{ background: '#1f2937', color: '#fff', border: '1px solid #374151' }} />
-                  <span style={{ color: '#6b7280' }}>–</span>
-                  <input type="time" value={workEditEnd} onChange={(e) => setWorkEditEnd(e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg text-sm"
-                    style={{ background: '#1f2937', color: '#fff', border: '1px solid #374151' }} />
-                </div>
-                <div className="flex gap-2 mt-3">
-                  <button onClick={saveWorkHours} className="flex-1 py-2 rounded-lg text-sm font-semibold cursor-pointer"
-                    style={{ background: '#059669', color: '#fff' }}>Sauvegarder</button>
-                  <button onClick={() => setEditingWork(false)} className="px-4 py-2 rounded-lg text-sm cursor-pointer"
-                    style={{ background: '#1f2937', color: '#9ca3af' }}>Annuler</button>
+            {/* ── EVENTOS DO CALENDÁRIO ────────────────────────────
+                Mostra os eventos criados no Calendário que coincidem
+                com o dia selecionado (À faire ou Rendez-vous).
+            ─────────────────────────────────────────────────── */}
+            {dayCalendarEvents.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <SectionLabel title="Événements du jour" right={`${dayCalendarEvents.length}`} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {dayCalendarEvents.map((ev) => {
+                    const color = ev.type === 'rdv' ? '#3b82f6' : '#f59e0b';
+                    const icon  = ev.type === 'rdv' ? '📅' : '✅';
+                    return (
+                      <div key={ev.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          padding: '10px 14px', borderRadius: 12,
+                          background: '#111118', borderLeft: `3px solid ${color}`,
+                        }}>
+                        <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {ev.title}
+                          </div>
+                          {ev.time && (
+                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                              {ev.time.replace(':', 'h')}
+                            </div>
+                          )}
+                        </div>
+                        {/* Badge de tipo */}
+                        <span style={{ fontSize: 10, fontWeight: 700, color, background: color + '15', padding: '2px 8px', borderRadius: 6, flexShrink: 0 }}>
+                          {ev.type === 'rdv' ? 'RDV' : 'À faire'}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
 
-            {/* Exercise checklist */}
-            {exerciseList && (
-              <div className="mb-5">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-xs font-bold uppercase tracking-widest" style={{ color: '#9ca3af' }}>
-                    {sportType === 'gym' ? `Treino ${treino} — Full Body` : 'Home Workout'}
-                  </h3>
-                  <span className="text-xs" style={{ color: '#4b5563' }}>{exerciseList.length} exercices</span>
+            {/* ── EDITOR DE HORÁRIO DE TRABALHO ────────────────── */}
+            {editingWork && hasWork && (
+              <div style={{ background: '#111118', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 14, padding: 16, marginBottom: 20 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 10 }}>
+                  ✏️ Éditer horaire travail
                 </div>
-                <div className="rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #1f2937' }}>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <input type="time" value={workEditStart} onChange={(e) => setWorkEditStart(e.target.value)}
+                    style={timeInputStyle} />
+                  <span style={{ color: '#6b7280' }}>–</span>
+                  <input type="time" value={workEditEnd} onChange={(e) => setWorkEditEnd(e.target.value)}
+                    style={timeInputStyle} />
+                </div>
+                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+                  <button onClick={saveWorkHours} style={{ flex: 1, height: 44, borderRadius: 10, background: '#059669', border: 'none', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                    Sauvegarder
+                  </button>
+                  <button onClick={() => setEditingWork(false)} style={{ height: 44, padding: '0 16px', borderRadius: 10, background: '#1f2937', border: 'none', color: '#9ca3af', fontSize: 14, cursor: 'pointer' }}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* ── CHECKLIST DE SÉRIES ───────────────────────────── */}
+            {exerciseList && (
+              <div style={{ marginBottom: 24 }}>
+                <SectionLabel title={sportType === 'gym' ? `Treino ${treino} — Full Body` : 'Home Workout'} right={`${exerciseList.length} exercices`} />
+                <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
                   {exerciseList.map((ex, exIdx) => {
-                    const checks = getChecks(exIdx);
-                    const allDone = checks.every(Boolean);
-                    const doneSets = checks.filter(Boolean).length;
+                    const checks    = getChecks(exIdx);
+                    const doneSets  = checks.filter(Boolean).length;
+                    const allDone   = doneSets === ex.sets;
+
                     return (
-                      <div key={exIdx} className="px-4 py-3"
-                        style={{ borderBottom: exIdx < exerciseList.length - 1 ? '1px solid #1f2937' : undefined, background: allDone ? 'rgba(6,78,59,0.12)' : undefined }}>
-                        <div className="flex justify-between items-center mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs w-5 text-center font-mono" style={{ color: '#4b5563' }}>{exIdx + 1}</span>
-                            <span className="text-sm" style={{ color: allDone ? '#6ee7b7' : '#e5e7eb' }}>{ex.name}</span>
-                            {allDone && <span style={{ color: '#22c55e', fontSize: 12 }}>✓</span>}
+                      <div key={exIdx}
+                        style={{
+                          padding: '12px 14px',
+                          borderBottom: exIdx < exerciseList.length - 1 ? '1px solid #1f2937' : undefined,
+                          // Fundo verde subtil quando todas as séries estão feitas
+                          background: allDone ? 'rgba(6,78,59,0.15)' : undefined,
+                          transition: 'background 0.3s',
+                        }}>
+
+                        {/* Linha do nome + contador */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: 11, width: 18, textAlign: 'center', fontFamily: 'monospace', color: '#4b5563' }}>
+                              {exIdx + 1}
+                            </span>
+                            <span style={{ fontSize: 14, color: allDone ? '#6ee7b7' : '#e5e7eb', fontWeight: 500 }}>
+                              {ex.name}
+                            </span>
+                            {allDone && <span style={{ fontSize: 13, color: '#4ade80' }}>✓</span>}
                           </div>
-                          <span className="text-xs font-mono px-2 py-0.5 rounded" style={{ color: '#60a5fa', background: 'rgba(30,58,95,0.25)' }}>
+                          {/* Badge "séries feitas / total × reps" */}
+                          <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: '#60a5fa', background: 'rgba(37,99,235,0.15)', padding: '2px 8px', borderRadius: 6 }}>
                             {doneSets}/{ex.sets}×{ex.reps}
                           </span>
                         </div>
-                        <div className="flex gap-2 pl-7">
+
+                        {/* Botões de série — um por set */}
+                        <div style={{ display: 'flex', gap: 8, paddingLeft: 26 }}>
                           {Array.from({ length: ex.sets }, (_, setIdx) => {
                             const done = checks[setIdx] ?? false;
                             return (
                               <button key={setIdx} onClick={() => toggleSet(exIdx, setIdx)}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold cursor-pointer transition-all"
                                 style={{
-                                  background: done ? '#059669' : '#1f2937',
-                                  color: done ? '#fff' : '#6b7280',
+                                  width: 36, height: 36, borderRadius: 9,
                                   border: `1px solid ${done ? '#10b981' : '#374151'}`,
+                                  background: done ? '#059669' : '#1a2235',
+                                  color: done ? '#fff' : '#6b7280',
+                                  fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                                  transition: 'all 0.15s',
                                 }}>
+                                {/* Mostra ✓ quando feito, ou o número da série */}
                                 {done ? '✓' : setIdx + 1}
                               </button>
                             );
@@ -343,112 +772,425 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
               </div>
             )}
 
-            {/* Weekly stats */}
-            <div className="rounded-xl p-4" style={{ background: '#111118', border: '1px solid #1f2937' }}>
-              <h3 className="text-xs font-bold uppercase tracking-widest mb-3" style={{ color: '#6b7280' }}>
-                Stats de la semaine
-              </h3>
-              <div className="space-y-3">
-                <StatBar label="Gym 💪" done={weekStats.gymDone} total={weekStats.gymTotal} color="#3b82f6" />
-                <StatBar label="JJB 🥋" done={weekStats.jjbDone} total={weekStats.jjbTotal} color="#a855f7" />
-                <StatBar label="Permis 📚" done={weekStats.permisDays} total={7} color="#ef4444" />
+            {/* ── STATS DA SEMANA ───────────────────────────────── */}
+            <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, padding: 16 }}>
+              <SectionLabel title="Stats da semana" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
+                <StatBar label="Gym 💪"    done={weekStats.gymDone}   total={weekStats.gymTotal}   color="#3b82f6" />
+                <StatBar label="JJB 🥋"    done={weekStats.jjbDone}   total={weekStats.jjbTotal}   color="#a855f7" />
+                <StatBar label="Permis 📚" done={weekStats.permisDays} total={7}                   color="#ef4444" />
               </div>
             </div>
+
           </div>
         )}
 
-        {/* --- NUTRITION --- */}
+        {/* ════════════════════════════════════════
+            ABA: REPAS (Nutrição detalhada)
+            ════════════════════════════════════════ */}
         {activeTab === 'nutrition' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Repas</h2>
-              <span className="text-xs" style={{ color: '#6b7280' }}>{DAYS[selectedDay]}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Repas</h2>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>{DAYS[selectedDay]}</span>
             </div>
-            {Object.entries(NUTRITION).map(([key, meal]) => (
-              <div key={key} className="rounded-xl overflow-hidden" style={{ background: '#111118', border: '1px solid #1f2937' }}>
-                <div className="px-4 py-3" style={{ borderBottom: '1px solid #1f2937' }}>
-                  <h3 className="text-sm font-semibold" style={{ color: '#e5e7eb' }}>{meal.label}</h3>
-                </div>
-                <div className="p-3 space-y-2">
-                  {meal.options.map((opt, i) => {
-                    const isSelected = mealSel[key] === i;
-                    return (
-                      <button key={i} onClick={() => setMeal(key, i)}
-                        className="w-full text-left text-sm px-3 py-2.5 rounded-lg flex items-start gap-2 cursor-pointer"
+
+            {Object.entries(NUTRITION).map(([key, meal]) => {
+              // Opções customizadas para este slot (ex: "breakfast")
+              const custom   = customMealOptions[key] ?? [];
+              // Índice global da opção selecionada (base + custom combinados)
+              const selIdx   = mealSel[key] ?? 0;
+              const baseLen  = meal.options.length;
+              // true se o formulário de adicionar está aberto neste slot
+              const isAdding = addingMeal === key;
+
+              return (
+                <div key={key} style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
+
+                  {/* Cabeçalho do slot */}
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#e5e7eb' }}>{meal.label}</span>
+                    <span style={{ fontSize: 10, color: '#4b5563' }}>{baseLen + custom.length} opções</span>
+                  </div>
+
+                  <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+
+                    {/* ── Opções base (não apagáveis) ────────── */}
+                    {meal.options.map((opt, i) => {
+                      const isSel = selIdx === i;
+                      return (
+                        <button key={i} onClick={() => setMeal(key, i)}
+                          style={{
+                            display: 'flex', alignItems: 'flex-start', gap: 10,
+                            padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
+                            textAlign: 'left', minHeight: 44,
+                            border: `1px solid ${isSel ? 'rgba(16,185,129,0.4)' : 'transparent'}`,
+                            background: isSel ? 'rgba(6,78,59,0.2)' : 'rgba(31,41,55,0.5)',
+                          }}>
+                          {/* Círculo indicador de seleção */}
+                          <span style={{
+                            width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                            border: `2px solid ${isSel ? '#10b981' : '#4b5563'}`,
+                            background: isSel ? '#10b981' : 'transparent',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: 10, color: '#fff',
+                          }}>
+                            {isSel ? '✓' : ''}
+                          </span>
+                          <span style={{ fontSize: 13, color: isSel ? '#6ee7b7' : '#9ca3af' }}>{opt}</span>
+                        </button>
+                      );
+                    })}
+
+                    {/* ── Opções customizadas (apagáveis com ×) ── */}
+                    {custom.map((opt, ci) => {
+                      // O índice global desta opção custom é baseLen + ci
+                      const globalIdx = baseLen + ci;
+                      const isSel     = selIdx === globalIdx;
+                      return (
+                        <div key={`custom-${ci}`} style={{ display: 'flex', alignItems: 'stretch', gap: 6 }}>
+                          {/* Botão de seleção da opção customizada */}
+                          <button onClick={() => setMeal(key, globalIdx)}
+                            style={{
+                              flex: 1, display: 'flex', alignItems: 'flex-start', gap: 10,
+                              padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
+                              textAlign: 'left', minHeight: 44,
+                              border: `1px solid ${isSel ? 'rgba(251,191,36,0.4)' : 'rgba(251,191,36,0.1)'}`,
+                              background: isSel ? 'rgba(120,53,15,0.2)' : 'rgba(120,53,15,0.08)',
+                            }}>
+                            <span style={{
+                              width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                              border: `2px solid ${isSel ? '#f59e0b' : '#78350f'}`,
+                              background: isSel ? '#f59e0b' : 'transparent',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 10, color: '#fff',
+                            }}>
+                              {isSel ? '✓' : ''}
+                            </span>
+                            {/* Cor âmbar para distinguir opções customizadas das base */}
+                            <span style={{ fontSize: 13, color: isSel ? '#fcd34d' : '#92400e' }}>{opt}</span>
+                          </button>
+
+                          {/* Botão × para apagar esta opção customizada */}
+                          <button
+                            onClick={() => removeCustomOption(key, ci)}
+                            style={{
+                              width: 36, borderRadius: 10, border: 'none', background: 'rgba(127,29,29,0.2)',
+                              color: '#f87171', fontSize: 14, cursor: 'pointer', flexShrink: 0,
+                            }}>
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                    {/* ── Formulário: adicionar nova opção ──────── */}
+                    {isAdding ? (
+                      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+                        <input
+                          autoFocus
+                          type="text"
+                          placeholder="Nova opção..."
+                          value={newMealText}
+                          onChange={(e) => setNewMealText(e.target.value)}
+                          // Permite confirmar com Enter
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              addCustomOption(key, newMealText);
+                              setNewMealText('');
+                              setAddingMeal(null);
+                            } else if (e.key === 'Escape') {
+                              setAddingMeal(null);
+                              setNewMealText('');
+                            }
+                          }}
+                          style={{
+                            flex: 1, padding: '10px 12px', borderRadius: 10,
+                            background: '#1f2937', color: '#fff',
+                            border: '1px solid #374151', fontSize: 13, outline: 'none',
+                          }}
+                        />
+                        {/* Confirmar */}
+                        <button
+                          onClick={() => {
+                            addCustomOption(key, newMealText);
+                            setNewMealText('');
+                            setAddingMeal(null);
+                          }}
+                          style={{
+                            padding: '0 14px', borderRadius: 10, border: 'none',
+                            background: '#059669', color: '#fff', fontWeight: 700,
+                            fontSize: 13, cursor: 'pointer',
+                          }}>
+                          OK
+                        </button>
+                        {/* Cancelar */}
+                        <button
+                          onClick={() => { setAddingMeal(null); setNewMealText(''); }}
+                          style={{
+                            padding: '0 12px', borderRadius: 10, border: 'none',
+                            background: '#1f2937', color: '#6b7280',
+                            fontSize: 13, cursor: 'pointer',
+                          }}>
+                          ✕
+                        </button>
+                      </div>
+                    ) : (
+                      /* Botão + para abrir o formulário */
+                      <button
+                        onClick={() => { setAddingMeal(key); setNewMealText(''); }}
                         style={{
-                          background: isSelected ? 'rgba(6,78,59,0.25)' : 'rgba(31,41,55,0.4)',
-                          border: `1px solid ${isSelected ? 'rgba(6,95,70,0.5)' : 'transparent'}`,
-                          color: isSelected ? '#6ee7b7' : '#9ca3af',
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
+                          border: '1px dashed #374151', background: 'transparent',
+                          color: '#4b5563', fontSize: 12, fontWeight: 600,
+                          marginTop: 2,
                         }}>
-                        <span className="mt-0.5 shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold"
-                          style={{ border: `1px solid ${isSelected ? '#10b981' : '#4b5563'}`, background: isSelected ? '#10b981' : 'transparent', color: '#fff' }}>
-                          {isSelected ? '✓' : ''}
-                        </span>
-                        {opt}
+                        <span style={{ fontSize: 16, lineHeight: 1, color: '#6b7280' }}>+</span>
+                        Ajouter une option
                       </button>
-                    );
-                  })}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* --- STUDIES --- */}
+        {/* ════════════════════════════════════════
+            ABA: ÉTUDES
+            ════════════════════════════════════════ */}
         {activeTab === 'studies' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Études</h2>
-              <span className="text-xs" style={{ color: '#6b7280' }}>{DAYS[selectedDay]}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Études</h2>
+              <span style={{ fontSize: 12, color: '#6b7280' }}>{DAYS[selectedDay]}</span>
             </div>
-            <div className="space-y-2">
-              {STUDIES.map((study) => {
-                const isDone = studiesSel.includes(study.id);
-                const isDisabled = study.id === 'brand' && selectedDay !== 6;
-                return (
-                  <button key={study.id} disabled={isDisabled} onClick={() => !isDisabled && toggleStudy(study.id)}
-                    className="w-full flex items-center gap-4 rounded-xl p-4 transition-all"
-                    style={{ background: '#111118', border: `1px solid ${isDone ? '#374151' : '#1f2937'}`, opacity: isDisabled ? 0.3 : 1, cursor: isDisabled ? 'not-allowed' : 'pointer' }}>
-                    <div className="shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center"
-                      style={{ borderColor: isDone ? 'transparent' : '#4b5563', background: isDone ? study.color : 'transparent' }}>
-                      {isDone && <span className="text-white text-xs font-bold">✓</span>}
-                    </div>
-                    <div className="flex-1 text-left">
-                      <div className="text-sm font-semibold" style={{ color: isDone ? '#4b5563' : '#fff', textDecoration: isDone ? 'line-through' : undefined }}>{study.label}</div>
-                      <div className="text-xs mt-0.5" style={{ color: '#6b7280' }}>{study.detail}</div>
-                    </div>
-                    <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{ color: study.color, background: '#1f2937' }}>P{study.priority}</span>
-                  </button>
-                );
-              })}
-            </div>
-            <div className="rounded-xl p-4" style={{ background: 'rgba(69,10,10,0.2)', border: '1px solid rgba(127,29,29,0.25)' }}>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-lg">📚</span>
-                <span className="text-sm font-semibold text-red-400">Rappel — Permis</span>
+
+            {/* ── MINI CALENDÁRIO SEMANAL ───────────────────────────
+                Mostra para cada dia os estudos sugeridos (pontos coloridos)
+                e se o dia já está completo (✓ verde).
+                Clicar num dia navega para ele.
+            ─────────────────────────────────────────────────────── */}
+            <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, padding: 14 }}>
+              <SectionLabel title="Programme de la semaine" />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+                {Array.from({ length: 7 }, (_, d) => {
+                  const isSel      = d === selectedDay;
+                  const isToday    = isCurrentWeek && d === todayIndex;
+                  const scheduled  = studySchedule[d] ?? [];
+                  const k          = `${weekId}-${d}`;
+                  const dayDone    = studiesDone[k] ?? [];
+                  // Todos os estudos sugeridos foram feitos?
+                  const allDone    = scheduled.length > 0 && scheduled.every((id) => dayDone.includes(id));
+
+                  return (
+                    <button key={d} onClick={() => onDayChange(d)}
+                      style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                        padding: '8px 3px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                        background: isSel ? '#2563eb' : isToday ? 'rgba(37,99,235,0.12)' : 'transparent',
+                      }}>
+                      {/* Abreviatura do dia */}
+                      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', color: isSel ? '#fff' : '#6b7280' }}>
+                        {DAY_ABBR[d]}
+                      </span>
+                      {/* Número do dia */}
+                      <span style={{ fontSize: 11, color: isSel ? '#bfdbfe' : '#4b5563' }}>
+                        {weekDates[d].getDate()}
+                      </span>
+                      {/* Pontos: um por estudo sugerido (cheio = feito, vazio = por fazer) */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center', minHeight: 10 }}>
+                        {scheduled.map((id) => {
+                          const s      = STUDIES.find((x) => x.id === id)!;
+                          const isDone = dayDone.includes(id);
+                          return (
+                            <span key={id} style={{
+                              width: 6, height: 6, borderRadius: '50%',
+                              background: isDone ? s.color : 'transparent',
+                              border: `1.5px solid ${s.color}`,
+                              // Opacidade reduzida quando feito (ponto cheio mas mais suave)
+                              opacity: isDone ? 0.9 : 0.5,
+                            }} />
+                          );
+                        })}
+                      </div>
+                      {/* Check verde se todos os estudos do dia foram feitos */}
+                      {allDone && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>✓</span>}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-xs" style={{ color: '#9ca3af' }}>
-                Étudier le code <strong style={{ color: '#d1d5db' }}>chaque jour après le sport</strong>. Priorité absolue.
+            </div>
+
+            {/* ── CARDS DE ESTUDO ───────────────────────────────────
+                Um card por estudo. Mostra:
+                - Badge "Suggéré" se está no plano de hoje
+                - Progresso semanal "X/Y cette semaine"
+                - Círculo de estado (feito / por fazer)
+                Clicar togla o estado feito/por fazer.
+            ─────────────────────────────────────────────────────── */}
+            {STUDIES.map((study) => {
+              const isDone      = studiesSel.includes(study.id);
+              // Branding só disponível ao domingo
+              const isDisabled  = study.id === 'brand' && selectedDay !== 6;
+              // Está no plano sugerido para hoje?
+              const isSuggested = (studySchedule[selectedDay] ?? []).includes(study.id);
+              // Quota semanal (espelha os valores em computeStudySchedule)
+              const quotas: Record<string, number> = { permis: 7, sites: 3, prog: 2, brand: 1 };
+              const quota       = quotas[study.id] ?? 0;
+              const weekCount   = weekStudyCounts[study.id] ?? 0;
+              const isComplete  = weekCount >= quota;
+
+              return (
+                <button key={study.id} disabled={isDisabled}
+                  onClick={() => !isDisabled && toggleStudy(study.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 14,
+                    padding: '14px 16px', borderRadius: 14, textAlign: 'left',
+                    border: `1px solid ${isDone ? 'rgba(55,65,81,0.6)' : isSuggested ? study.color + '40' : '#1f2937'}`,
+                    background: isDone ? 'rgba(6,78,59,0.08)' : isSuggested ? study.color + '0a' : '#111118',
+                    opacity: isDisabled ? 0.3 : 1,
+                    cursor: isDisabled ? 'not-allowed' : 'pointer',
+                    minHeight: 64, transition: 'background 0.2s',
+                  }}>
+
+                  {/* Círculo de estado */}
+                  <div style={{
+                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+                    border: `2px solid ${isDone ? 'transparent' : '#4b5563'}`,
+                    background: isDone ? study.color : 'transparent',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {isDone && <span style={{ color: '#fff', fontSize: 13, fontWeight: 900 }}>✓</span>}
+                  </div>
+
+                  {/* Texto principal */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 15, fontWeight: 600, marginBottom: 2,
+                      color: isDone ? '#4b5563' : '#fff',
+                      textDecoration: isDone ? 'line-through' : undefined,
+                    }}>
+                      {study.label}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      {/* Frequência base */}
+                      <span style={{ fontSize: 11, color: '#6b7280' }}>{study.detail}</span>
+                      {/* Badge "Suggéré" — aparece apenas se estiver no plano de hoje e ainda não feito */}
+                      {isSuggested && !isDone && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 700,
+                          color: '#fbbf24', background: 'rgba(120,53,15,0.2)',
+                          padding: '1px 7px', borderRadius: 6,
+                        }}>
+                          💡 Suggéré
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Bloco direita: prioridade + progresso semanal */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: study.color,
+                      background: '#1a2235', padding: '2px 8px', borderRadius: 7,
+                    }}>
+                      P{study.priority}
+                    </span>
+                    {/* Progresso: ex "2/3 sem." com cor verde quando completo */}
+                    <span style={{
+                      fontSize: 10, fontWeight: 600,
+                      color: isComplete ? '#4ade80' : '#6b7280',
+                    }}>
+                      {weekCount}/{quota} sem.
+                    </span>
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Aviso de prioridade do permis */}
+            <div style={{ background: 'rgba(69,10,10,0.2)', border: '1px solid rgba(127,29,29,0.25)', borderRadius: 14, padding: 14 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <span style={{ fontSize: 18 }}>📚</span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#f87171' }}>Rappel — Permis</span>
+              </div>
+              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
+                Étudier <strong style={{ color: '#d1d5db' }}>chaque jour après le sport</strong>. Priorité absolue.
               </p>
             </div>
           </div>
         )}
+
       </div>
     </div>
   );
 }
 
+// ─────────────────────────────────────────────
+// Sub-componentes reutilizáveis
+// (extraídos para manter o render principal limpo)
+// ─────────────────────────────────────────────
+
+/** Botão de navegação (‹ ›) */
+function NavBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button onClick={onClick}
+      style={{ minWidth: 44, minHeight: 44, background: '#1f2937', color: '#9ca3af', border: 'none', borderRadius: 10, fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {children}
+    </button>
+  );
+}
+
+/** Botão pequeno de ação (Treino A/B, Marcar feito) */
+function SmallBtn({ onClick, children, color, active }: { onClick: () => void; children: React.ReactNode; color: string; active?: boolean }) {
+  return (
+    <button onClick={onClick}
+      style={{
+        padding: '6px 12px', borderRadius: 9,
+        border: `1px solid ${active ? color + '60' : '#374151'}`,
+        background: active ? color + '20' : '#1a2235',
+        color, fontWeight: 700, fontSize: 12, cursor: 'pointer',
+        minHeight: 36,
+      }}>
+      {children}
+    </button>
+  );
+}
+
+/** Label de secção (título pequeno maiúsculo + texto direita) */
+function SectionLabel({ title, right }: { title: string; right?: string }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6b7280' }}>
+        {title}
+      </span>
+      {right && <span style={{ fontSize: 11, color: '#4b5563' }}>{right}</span>}
+    </div>
+  );
+}
+
+/** Barra de progresso com label e contador */
 function StatBar({ label, done, total, color }: { label: string; done: number; total: number; color: string }) {
-  const pct = total > 0 ? (done / total) * 100 : 0;
+  const pct = total > 0 ? Math.min((done / total) * 100, 100) : 0;
   return (
     <div>
-      <div className="flex justify-between items-center mb-1.5">
-        <span className="text-xs" style={{ color: '#9ca3af' }}>{label}</span>
-        <span className="text-xs font-bold" style={{ color }}>{done}/{total}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+        <span style={{ fontSize: 13, color: '#9ca3af' }}>{label}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color }}>{done}/{total}</span>
       </div>
-      <div className="h-1.5 rounded-full" style={{ background: '#1f2937' }}>
-        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      <div style={{ height: 5, borderRadius: 4, background: '#1f2937' }}>
+        <div style={{ height: '100%', borderRadius: 4, background: color, width: `${pct}%`, transition: 'width 0.4s ease' }} />
       </div>
     </div>
   );
 }
+
+// Estilo partilhado para inputs de hora
+const timeInputStyle: React.CSSProperties = {
+  flex: 1, padding: '10px 12px', borderRadius: 9,
+  background: '#1f2937', color: '#fff',
+  border: '1px solid #374151', fontSize: 15,
+  outline: 'none',
+};

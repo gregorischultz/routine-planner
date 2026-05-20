@@ -1,6 +1,15 @@
 export type Exercise = { name: string; sets: number; reps: string };
 export type SportType = 'jjb_fixed' | 'jjb_off' | 'gym' | 'home';
 
+/** Evento criado pelo utilizador no Calendário */
+export interface CalendarEvent {
+  id: string;      // identificador único (timestamp)
+  title: string;
+  date: string;    // "YYYY-MM-DD"
+  time?: string;   // "HH:MM" — opcional
+  type: 'todo' | 'rdv';  // À faire | Rendez-vous
+}
+
 export const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 export const DAY_ABBR = ['LUN', 'MAR', 'MER', 'JEU', 'VEN', 'SAM', 'DIM'];
 export const MONTH_NAMES = [

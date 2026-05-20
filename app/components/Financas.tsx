@@ -10,7 +10,7 @@
  *  - Botão "Arquivar e iniciar XXXX" para fechar o ano atual
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useLocalStorage } from './hooks';
 import { FINANCAS_CATEGORIES, MONTH_ABBR } from './data';
 
@@ -56,6 +56,55 @@ export default function Financas() {
   // O ano visualizado é editável apenas se for o ano ativo
   const isReadOnly = viewYear < activeYear;
   const yearKey    = String(viewYear); // chave para aceder a allData[yearKey]
+
+  /**
+   * Migração one-time: se o utilizador tinha dados no formato antigo
+   * (chaves "financas" e "financas_cats"), copia-os para o novo formato
+   * (chaves "financas_all" e "financas_cats_all") sem perder nada.
+   *
+   * Só corre uma vez ao montar o componente.
+   */
+  useEffect(() => {
+    // Verifica se os dados do ano atual já existem no novo formato
+    const existingAllStr = localStorage.getItem('financas_all');
+    if (existingAllStr) {
+      try {
+        const existing = JSON.parse(existingAllStr) as YearlyData;
+        // Se já há dados para este ano, a migração já foi feita
+        if (existing[String(THIS_YEAR)]) return;
+      } catch {}
+    }
+
+    // Tenta ler dados do formato antigo
+    const oldDataStr = localStorage.getItem('financas');
+    const oldCatsStr = localStorage.getItem('financas_cats');
+
+    // Se não há nada antigo para migrar, sai
+    if (!oldDataStr && !oldCatsStr) return;
+
+    if (oldDataStr) {
+      try {
+        const oldData = JSON.parse(oldDataStr) as FinancasData;
+        const current: YearlyData = existingAllStr ? JSON.parse(existingAllStr) : {};
+        const merged = { ...current, [String(THIS_YEAR)]: oldData };
+        // Escreve direto no localStorage para garantir persistência
+        localStorage.setItem('financas_all', JSON.stringify(merged));
+        // Atualiza o estado React também
+        setAllData(merged);
+      } catch {}
+    }
+
+    if (oldCatsStr) {
+      try {
+        const oldCats = JSON.parse(oldCatsStr) as Record<string, CatCustom>;
+        const existingCatsStr = localStorage.getItem('financas_cats_all');
+        const current: YearlyCats = existingCatsStr ? JSON.parse(existingCatsStr) : {};
+        const merged = { ...current, [String(THIS_YEAR)]: oldCats };
+        localStorage.setItem('financas_cats_all', JSON.stringify(merged));
+        setAllCats(merged);
+      } catch {}
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Helpers para ler/escrever dados do ano visualizado ────────────────
 

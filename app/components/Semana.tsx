@@ -961,28 +961,119 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
             ABA: ÉTUDES
             ════════════════════════════════════════ */}
         {activeTab === 'studies' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Études</h2>
               <span style={{ fontSize: 12, color: '#6b7280' }}>{DAYS[selectedDay]}</span>
             </div>
 
-            {/* ── MINI CALENDÁRIO SEMANAL ───────────────────────────
-                Mostra para cada dia os estudos sugeridos (pontos coloridos)
-                e se o dia já está completo (✓ verde).
-                Clicar num dia navega para ele.
-            ─────────────────────────────────────────────────────── */}
+            {/* ══════════════════════════════════════════════════════
+                SECÇÃO 1 — "O que estudei hoje"
+                O utilizador regista aqui o que fez neste dia.
+                Só depois de registar é que o plano da semana
+                atualiza com as sugestões para os dias restantes.
+            ══════════════════════════════════════════════════════ */}
+            <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
+              {/* Cabeçalho da secção de log */}
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb' }}>
+                  📝 O que estudei hoje
+                </span>
+                {/* Contador: quantos foram registados */}
+                <span style={{ fontSize: 11, color: studiesSel.length > 0 ? '#4ade80' : '#4b5563', fontWeight: 600 }}>
+                  {studiesSel.length} registado{studiesSel.length !== 1 ? 's' : ''}
+                </span>
+              </div>
+
+              {/* Cards de cada estudo — toque para registar/cancelar */}
+              <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {STUDIES.map((study) => {
+                  const isDone     = studiesSel.includes(study.id);
+                  // Branding só disponível ao domingo
+                  const isDisabled = study.id === 'brand' && selectedDay !== 6;
+                  // Quota semanal e progresso
+                  const quotas: Record<string, number> = { permis: 7, sites: 3, prog: 2, brand: 1 };
+                  const quota      = quotas[study.id] ?? 0;
+                  const weekCount  = weekStudyCounts[study.id] ?? 0;
+                  const isComplete = weekCount >= quota;
+
+                  return (
+                    <button key={study.id} disabled={isDisabled}
+                      onClick={() => !isDisabled && toggleStudy(study.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '12px 14px', borderRadius: 12, textAlign: 'left',
+                        // Feito = fundo verde suave; por fazer = fundo cinza
+                        border: `1px solid ${isDone ? study.color + '40' : '#1f2937'}`,
+                        background: isDone ? study.color + '12' : 'rgba(31,41,55,0.4)',
+                        opacity: isDisabled ? 0.3 : 1,
+                        cursor: isDisabled ? 'not-allowed' : 'pointer',
+                        minHeight: 52, transition: 'all 0.15s',
+                      }}>
+
+                      {/* Círculo de estado */}
+                      <div style={{
+                        width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
+                        border: `2px solid ${isDone ? 'transparent' : '#374151'}`,
+                        background: isDone ? study.color : 'transparent',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {isDone && <span style={{ color: '#fff', fontSize: 12, fontWeight: 900 }}>✓</span>}
+                      </div>
+
+                      {/* Nome + detalhe */}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          fontSize: 14, fontWeight: 600,
+                          color: isDone ? study.color : '#d1d5db',
+                        }}>
+                          {study.label}
+                        </div>
+                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>
+                          {study.freq}
+                        </div>
+                      </div>
+
+                      {/* Direita: progresso semanal + prioridade */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: study.color, background: '#1a2235', padding: '2px 7px', borderRadius: 6 }}>
+                          P{study.priority}
+                        </span>
+                        <span style={{ fontSize: 10, color: isComplete ? '#4ade80' : '#4b5563', fontWeight: 600 }}>
+                          {weekCount}/{quota} sem.
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ══════════════════════════════════════════════════════
+                SECÇÃO 2 — "Plano da semana"
+                Gerado AUTOMATICAMENTE com base no que foi registado.
+                Mostra o que falta fazer nos dias restantes.
+            ══════════════════════════════════════════════════════ */}
             <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, padding: 14 }}>
-              <SectionLabel title="Programme de la semaine" />
+              {/* Título + explicação */}
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6b7280', marginBottom: 4 }}>
+                  Plano da semana
+                </div>
+                <div style={{ fontSize: 11, color: '#4b5563' }}>
+                  Actualizado com base no que registaste · toca num dia para editar
+                </div>
+              </div>
+
+              {/* Mini calendário com pontos por estudo sugerido */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
                 {Array.from({ length: 7 }, (_, d) => {
-                  const isSel      = d === selectedDay;
-                  const isToday    = isCurrentWeek && d === todayIndex;
-                  const scheduled  = studySchedule[d] ?? [];
-                  const k          = `${weekId}-${d}`;
-                  const dayDone    = studiesDone[k] ?? [];
-                  // Todos os estudos sugeridos foram feitos?
-                  const allDone    = scheduled.length > 0 && scheduled.every((id) => dayDone.includes(id));
+                  const isSel     = d === selectedDay;
+                  const isToday   = isCurrentWeek && d === todayIndex;
+                  const scheduled = studySchedule[d] ?? [];
+                  const k         = `${weekId}-${d}`;
+                  const dayDone   = studiesDone[k] ?? [];
+                  const allDone   = scheduled.length > 0 && scheduled.every((id) => dayDone.includes(id));
 
                   return (
                     <button key={d} onClick={() => onDayChange(d)}
@@ -991,15 +1082,13 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                         padding: '8px 3px', borderRadius: 10, border: 'none', cursor: 'pointer',
                         background: isSel ? '#2563eb' : isToday ? 'rgba(37,99,235,0.12)' : 'transparent',
                       }}>
-                      {/* Abreviatura do dia */}
                       <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', color: isSel ? '#fff' : '#6b7280' }}>
                         {DAY_ABBR[d]}
                       </span>
-                      {/* Número do dia */}
                       <span style={{ fontSize: 11, color: isSel ? '#bfdbfe' : '#4b5563' }}>
                         {weekDates[d].getDate()}
                       </span>
-                      {/* Pontos: um por estudo sugerido (cheio = feito, vazio = por fazer) */}
+                      {/* Ponto por estudo: cheio = feito, contorno = por fazer */}
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 2, justifyContent: 'center', minHeight: 10 }}>
                         {scheduled.map((id) => {
                           const s      = STUDIES.find((x) => x.id === id)!;
@@ -1009,106 +1098,27 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                               width: 6, height: 6, borderRadius: '50%',
                               background: isDone ? s.color : 'transparent',
                               border: `1.5px solid ${s.color}`,
-                              // Opacidade reduzida quando feito (ponto cheio mas mais suave)
                               opacity: isDone ? 0.9 : 0.5,
                             }} />
                           );
                         })}
                       </div>
-                      {/* Check verde se todos os estudos do dia foram feitos */}
                       {allDone && <span style={{ fontSize: 8, color: '#4ade80', fontWeight: 900 }}>✓</span>}
                     </button>
                   );
                 })}
               </div>
+
+              {/* Legenda dos estudos */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 12 }}>
+                {STUDIES.map((s) => (
+                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
+                    <span style={{ fontSize: 10, color: '#6b7280' }}>{s.label.split(' ')[0]}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-
-            {/* ── CARDS DE ESTUDO ───────────────────────────────────
-                Um card por estudo. Mostra:
-                - Badge "Suggéré" se está no plano de hoje
-                - Progresso semanal "X/Y cette semaine"
-                - Círculo de estado (feito / por fazer)
-                Clicar togla o estado feito/por fazer.
-            ─────────────────────────────────────────────────────── */}
-            {STUDIES.map((study) => {
-              const isDone      = studiesSel.includes(study.id);
-              // Branding só disponível ao domingo
-              const isDisabled  = study.id === 'brand' && selectedDay !== 6;
-              // Está no plano sugerido para hoje?
-              const isSuggested = (studySchedule[selectedDay] ?? []).includes(study.id);
-              // Quota semanal (espelha os valores em computeStudySchedule)
-              const quotas: Record<string, number> = { permis: 7, sites: 3, prog: 2, brand: 1 };
-              const quota       = quotas[study.id] ?? 0;
-              const weekCount   = weekStudyCounts[study.id] ?? 0;
-              const isComplete  = weekCount >= quota;
-
-              return (
-                <button key={study.id} disabled={isDisabled}
-                  onClick={() => !isDisabled && toggleStudy(study.id)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 14,
-                    padding: '14px 16px', borderRadius: 14, textAlign: 'left',
-                    border: `1px solid ${isDone ? 'rgba(55,65,81,0.6)' : isSuggested ? study.color + '40' : '#1f2937'}`,
-                    background: isDone ? 'rgba(6,78,59,0.08)' : isSuggested ? study.color + '0a' : '#111118',
-                    opacity: isDisabled ? 0.3 : 1,
-                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    minHeight: 64, transition: 'background 0.2s',
-                  }}>
-
-                  {/* Círculo de estado */}
-                  <div style={{
-                    width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${isDone ? 'transparent' : '#4b5563'}`,
-                    background: isDone ? study.color : 'transparent',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}>
-                    {isDone && <span style={{ color: '#fff', fontSize: 13, fontWeight: 900 }}>✓</span>}
-                  </div>
-
-                  {/* Texto principal */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontSize: 15, fontWeight: 600, marginBottom: 2,
-                      color: isDone ? '#4b5563' : '#fff',
-                      textDecoration: isDone ? 'line-through' : undefined,
-                    }}>
-                      {study.label}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                      {/* Frequência base */}
-                      <span style={{ fontSize: 11, color: '#6b7280' }}>{study.detail}</span>
-                      {/* Badge "Suggéré" — aparece apenas se estiver no plano de hoje e ainda não feito */}
-                      {isSuggested && !isDone && (
-                        <span style={{
-                          fontSize: 10, fontWeight: 700,
-                          color: '#fbbf24', background: 'rgba(120,53,15,0.2)',
-                          padding: '1px 7px', borderRadius: 6,
-                        }}>
-                          💡 Suggéré
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Bloco direita: prioridade + progresso semanal */}
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, color: study.color,
-                      background: '#1a2235', padding: '2px 8px', borderRadius: 7,
-                    }}>
-                      P{study.priority}
-                    </span>
-                    {/* Progresso: ex "2/3 sem." com cor verde quando completo */}
-                    <span style={{
-                      fontSize: 10, fontWeight: 600,
-                      color: isComplete ? '#4ade80' : '#6b7280',
-                    }}>
-                      {weekCount}/{quota} sem.
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
 
             {/* Aviso de prioridade do permis */}
             <div style={{ background: 'rgba(69,10,10,0.2)', border: '1px solid rgba(127,29,29,0.25)', borderRadius: 14, padding: 14 }}>

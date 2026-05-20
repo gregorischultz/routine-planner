@@ -124,6 +124,198 @@ export const FINANCAS_CATEGORIES = [
   },
 ];
 
+// ─────────────────────────────────────────────
+// REDES SOCIAIS — dados dos formatos
+// ─────────────────────────────────────────────
+
+export interface RedesFormat {
+  id: string;
+  code: string;
+  label: string;
+  type: string;
+  duration: string;
+  day: string;     // dia padrão de publicação
+  hour: string;    // hora padrão
+  color: string;   // cor de destaque
+  guide: {
+    what: string;      // o que gravar
+    equipment: string; // equipamento
+    tip: string;       // regra de ouro
+  };
+}
+
+export const REDES_FORMATS: RedesFormat[] = [
+  {
+    id: 'f1', code: 'F1', label: 'Compilação semanal', type: 'Reel',
+    duration: '15–30s', day: 'Domingo', hour: '10h00', color: '#6366f1',
+    guide: {
+      what: 'Tudo. 10–20 clips de 3–8s ao longo dos 7 dias: caminhos, treino, cozinhar, estudar.',
+      equipment: 'Celular vertical 9:16 ou Akaso V50.',
+      tip: 'Gravar sempre que mudas de ambiente. 3 segundos de transição já bastam.',
+    },
+  },
+  {
+    id: 'f2', code: 'F2', label: 'POV', type: 'Reel',
+    duration: '8–15s', day: 'Segunda', hour: '19h00', color: '#ec4899',
+    guide: {
+      what: 'Um único gesto visto pelos teus olhos: amarrar faixa, abrir caderno, preparar café. Sem rosto.',
+      equipment: 'Celular em primeira pessoa. Luz natural. Corte seco.',
+      tip: 'Gravar 3–4 versões do mesmo gesto. Escolher a mais fluida.',
+    },
+  },
+  {
+    id: 'f3', code: 'F3', label: 'Transição', type: 'Reel',
+    duration: '7–12s', day: 'Segunda', hour: '19h00', color: '#f97316',
+    guide: {
+      what: 'Dois estados opostos: uniforme → kimono, caderno → academia.',
+      equipment: 'Celular em apoio fixo ou tripé. Mesmo ângulo nos dois lados.',
+      tip: 'O corte acontece num movimento (tirar a camisa = início do corte).',
+    },
+  },
+  {
+    id: 'f4', code: 'F4', label: 'Detalhes + frase', type: 'Reel',
+    duration: '6–10s', day: 'Quarta', hour: '19h00', color: '#14b8a6',
+    guide: {
+      what: 'Um objeto parado: kimono no gancho, xícara, livro aberto, mãos em repouso.',
+      equipment: 'Celular em apoio fixo, macro. Luz natural lateral.',
+      tip: 'Gravar 5–6 opções. Frase sobreposta no CapCut — fonte simples, cor clara sobre fundo escuro.',
+    },
+  },
+  {
+    id: 'f5', code: 'F5', label: 'Compilação JJB', type: 'Reel',
+    duration: '15–25s', day: 'Segunda', hour: '19h00', color: '#a855f7',
+    guide: {
+      what: 'Melhores momentos de treino do mês: queda, raspagem, suor. Foco em técnica, não vitória.',
+      equipment: 'Celular estável ou Akaso grande angular. Pedir ao parceiro para filmar.',
+      tip: 'Acumular material ao longo do mês. Reservado para a Semana 4.',
+    },
+  },
+  {
+    id: 'f6', code: 'F6', label: 'Brasileiro na França', type: 'Reel',
+    duration: '15–30s', day: 'Seg/Qua', hour: '19h00', color: '#22c55e',
+    guide: {
+      what: 'Momento específico e honesto: Grand Frais, fila do RER, sotaque, marmita. Não turístico.',
+      equipment: 'Celular. Modo vlog rápido. Tom documental, íntimo.',
+      tip: 'Planear a frase em FR e PT antes de editar. Legenda bilíngue é parte do formato.',
+    },
+  },
+  {
+    id: 'ca', code: 'CA', label: 'Carrossel filosófico', type: 'Carrossel',
+    duration: '4–5 slides', day: 'Sexta', hour: '19h00', color: '#f59e0b',
+    guide: {
+      what: '4–5 slides no Canva. Fundo escuro (#0a0a0a), tipografia limpa. Frase → contexto → reflexão → Renitēns.',
+      equipment: 'Canva ou Unfold.',
+      tip: 'Fontes: Marco Aurélio, Sêneca, Camus, Weil, Rickson, Goggins, Bíblia.',
+    },
+  },
+  {
+    id: 'cb', code: 'CB', label: 'Foto-conceito', type: 'Estático',
+    duration: '1 imagem', day: 'Sexta', hour: '19h00', color: '#94a3b8',
+    guide: {
+      what: 'Imagem documental forte: silhueta, detalhe de ambiente, mãos.',
+      equipment: 'Celular. Edição mínima: contraste leve, P&B ou paleta fria.',
+      tip: 'Sem filtro forçado. Legenda curta (Sem 2) ou reflexiva de fechamento (Sem 4).',
+    },
+  },
+  {
+    id: 'yt', code: 'YT', label: 'Compilado YouTube', type: 'Vídeo',
+    duration: '6–10 min', day: 'Sábado', hour: '10h00', color: '#ef4444',
+    guide: {
+      what: 'Semana completa: trabalho → treino → estudo → cultura → reflexão final 30s.',
+      equipment: 'Akaso V50. Cortes naturais. Voiceover quando faz sentido.',
+      tip: 'Agendar no YouTube Studio. Sem música chiclete. 6–10 min.',
+    },
+  },
+  {
+    id: 'stories', code: 'ST', label: 'Stories diários', type: 'Stories',
+    duration: 'ao longo do dia', day: 'Diário', hour: '—', color: '#3b82f6',
+    guide: {
+      what: 'Bastidor do dia: caminho, treino, frase curta. Espontâneo.',
+      equipment: 'Celular direto no Instagram. Sem produção.',
+      tip: 'Seg, Qua, Qui, Sex, Dom. Enquetes e perguntas geram mais interação.',
+    },
+  },
+];
+
+/** Dias de publicação fixos (ordenados) */
+export const REDES_POSTING_DAYS = [
+  { id: 'seg', label: 'Segunda', hour: '19h00' },
+  { id: 'qua', label: 'Quarta',  hour: '19h00' },
+  { id: 'sex', label: 'Sexta',   hour: '19h00' },
+  { id: 'sab', label: 'Sábado',  hour: '10h00' },
+  { id: 'dom', label: 'Domingo', hour: '10h00' },
+];
+
+/** Checklist de produção agrupado por formato */
+export const REDES_CHECKLIST: Record<string, { id: string; text: string }[]> = {
+  base: [
+    { id: 'b1', text: 'Material organizado por pasta/dia' },
+    { id: 'b2', text: 'Stories publicados (Seg, Qua, Qui, Sex, Dom)' },
+    { id: 'b3', text: 'Captions revisadas — máx. 8 linhas, sem coach-speak' },
+    { id: 'b4', text: 'Hashtags no comentário (não na caption)' },
+  ],
+  f1: [
+    { id: 'f1_1', text: 'Filmei 10–20 clips de 3–8s ao longo da semana?' },
+    { id: 'f1_2', text: 'Selecionei os 8–12 melhores clips?' },
+    { id: 'f1_3', text: 'Editei no CapCut (9:16, música fria, legenda FR)?' },
+    { id: 'f1_4', text: 'Agendado: Domingo 10h00' },
+  ],
+  f2: [
+    { id: 'f2_1', text: 'Escolhi o gesto a filmar?' },
+    { id: 'f2_2', text: 'Gravei 3–4 versões do mesmo gesto?' },
+    { id: 'f2_3', text: 'Escolhi a versão mais fluida?' },
+    { id: 'f2_4', text: 'Agendado: Segunda 19h00' },
+  ],
+  f3: [
+    { id: 'f3_1', text: 'Planeei os dois estados (A e B)?' },
+    { id: 'f3_2', text: 'Gravei lado A e lado B com mesmo ângulo?' },
+    { id: 'f3_3', text: 'Corte sincronizado no movimento testado?' },
+    { id: 'f3_4', text: 'Agendado: Segunda 19h00' },
+  ],
+  f4: [
+    { id: 'f4_1', text: 'Objeto escolhido (rodízio — não repetir)?' },
+    { id: 'f4_2', text: '5–6 opções filmadas?' },
+    { id: 'f4_3', text: 'Frase nova sobreposta na edição?' },
+    { id: 'f4_4', text: 'Agendado: Quarta 19h00' },
+  ],
+  f5: [
+    { id: 'f5_1', text: 'Material de treino acumulado ao longo do mês?' },
+    { id: 'f5_2', text: 'Melhores momentos selecionados (queda, técnica, suor)?' },
+    { id: 'f5_3', text: 'Montagem com música forte, legenda FR?' },
+    { id: 'f5_4', text: 'Agendado: Segunda 19h00' },
+  ],
+  f6: [
+    { id: 'f6_1', text: 'Momento específico e honesto escolhido?' },
+    { id: 'f6_2', text: 'Tema diferente das semanas anteriores?' },
+    { id: 'f6_3', text: 'Frase planeada em FR e PT?' },
+    { id: 'f6_4', text: 'Legenda bilíngue na edição?' },
+    { id: 'f6_5', text: 'Agendado: Segunda ou Quarta 19h00' },
+  ],
+  ca: [
+    { id: 'ca_1', text: 'Frase escolhida (diferente das semanas anteriores)?' },
+    { id: 'ca_2', text: '4–5 slides criados (fundo escuro, tipografia limpa)?' },
+    { id: 'ca_3', text: 'Slide final: Renitēns?' },
+    { id: 'ca_4', text: 'Agendado: Sexta 19h00' },
+  ],
+  cb: [
+    { id: 'cb_1', text: 'Imagem documental forte selecionada?' },
+    { id: 'cb_2', text: 'Edição mínima aplicada (contraste, P&B ou paleta fria)?' },
+    { id: 'cb_3', text: 'Legenda escrita no estilo Renitēns?' },
+    { id: 'cb_4', text: 'Agendado: Sexta 19h00' },
+  ],
+  yt: [
+    { id: 'yt_1', text: 'Material suficiente gravado com Akaso V50?' },
+    { id: 'yt_2', text: 'Estrutura: abertura → trabalho → treino → estudo → cultura → reflexão?' },
+    { id: 'yt_3', text: 'Voiceover gravado (se aplicável)?' },
+    { id: 'yt_4', text: 'Agendado no YouTube Studio: Sábado 10h00' },
+  ],
+  stories: [
+    { id: 'st_1', text: 'Bastidores do dia filmados?' },
+    { id: 'st_2', text: 'Enquete ou pergunta publicada?' },
+    { id: 'st_3', text: 'Stories em todos os dias programados?' },
+  ],
+};
+
 // --- Helpers ---
 
 export function getSportType(dayIndex: number, dayOffIndex: number): SportType {

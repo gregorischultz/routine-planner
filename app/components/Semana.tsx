@@ -14,7 +14,7 @@
 import { useState, useMemo } from 'react';
 import { useLocalStorage } from './hooks';
 import {
-  DAYS, DAY_ABBR, TREINO_A, TREINO_B, HOME_WORKOUT, NUTRITION, STUDIES,
+  DAYS, DAY_ABBR, TREINO_A, TREINO_B, HOME_WORKOUT, NUTRITION, STUDIES, REDES_FORMATS,
   type Exercise, type SportType, type CalendarEvent,
   getSportType, getGymTreino, hasTherapy, sportIcon,
   getWeekId, getDayDate, formatDate,
@@ -44,6 +44,10 @@ interface Props {
   selectedDay: number;
   onDayChange: (day: number) => void;
 }
+
+// Tipos mínimos para leitura do plano de redes (partilhado com Redes.tsx)
+type RedesPostRef = { formatId: string; time: string };
+type AllRedesPlan = Record<string, Partial<Record<number, RedesPostRef>>>;
 
 // ─────────────────────────────────────────────
 // Função principal: constrói a timeline do dia
@@ -279,6 +283,9 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
   // Eventos do calendário (partilhados com Calendario.tsx via mesma chave localStorage)
   const [calendarEvents] = useLocalStorage<CalendarEvent[]>('calendarEvents', []);
 
+  // Plano de redes (partilhado com Redes.tsx via mesma chave localStorage)
+  const [allRedesPlan] = useLocalStorage<AllRedesPlan>('redesPlan', {});
+
   // ── Estado local (UI) ──────────────────────────────────────────────────────
   const [activeTab, setActiveTab]     = useState<Tab>('schedule');
   const [editingWork, setEditingWork] = useState(false);
@@ -443,6 +450,13 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
   const dayCalendarEvents = calendarEvents
     .filter((e) => e.date === selectedDateStr)
     .sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
+
+  // Post de redes planeado para este dia (se existir)
+  const weekRedesPlan = allRedesPlan[weekId] ?? {};
+  const dayRedesPost  = weekRedesPlan[selectedDay];
+  const dayRedesFormat = dayRedesPost
+    ? (REDES_FORMATS.find((f) => f.id === dayRedesPost.formatId) ?? null)
+    : null;
 
   // ─────────────────────────────────────────────
   // Render
@@ -680,6 +694,50 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {/* ── POST DE REDES PLANEADO ───────────────────────────
+                Cartão de previsão: aparece quando há um post de redes
+                agendado para este dia na aba Redes.
+            ─────────────────────────────────────────────────── */}
+            {dayRedesPost && dayRedesFormat && (
+              <div style={{ marginBottom: 20 }}>
+                <SectionLabel title="📸 Redes sociais" right="Previsto" />
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 14px', borderRadius: 12,
+                  background: '#111118',
+                  border: `1px solid ${dayRedesFormat.color}25`,
+                  borderLeft: `3px solid ${dayRedesFormat.color}`,
+                }}>
+                  {/* Ícone do formato */}
+                  <div style={{
+                    width: 40, height: 40, borderRadius: 10, flexShrink: 0,
+                    background: dayRedesFormat.color + '20',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <span style={{ fontSize: 13, fontWeight: 900, color: dayRedesFormat.color }}>
+                      {dayRedesFormat.code}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {dayRedesFormat.label}
+                    </div>
+                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                      🕐 {dayRedesPost.time.replace(':', 'h')} · Instagram · {dayRedesFormat.duration}
+                    </div>
+                  </div>
+                  {/* Badge de hora */}
+                  <span style={{
+                    fontSize: 12, fontWeight: 800, color: dayRedesFormat.color,
+                    background: dayRedesFormat.color + '15',
+                    padding: '4px 10px', borderRadius: 8, flexShrink: 0,
+                  }}>
+                    {dayRedesPost.time.replace(':', 'h')}
+                  </span>
                 </div>
               </div>
             )}

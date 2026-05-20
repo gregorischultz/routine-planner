@@ -4,13 +4,15 @@ import { useState } from 'react';
 import Semana from './components/Semana';
 import Financas from './components/Financas';
 import Calendario from './components/Calendario';
+import Redes from './components/Redes';
 
-type Section = 'semana' | 'calendario' | 'financas';
+type Section = 'semana' | 'calendario' | 'financas' | 'redes';
 
 const NAV = [
-  { id: 'semana', icon: '📅', label: 'Semana' },
-  { id: 'calendario', icon: '📆', label: 'Calendário' },
-  { id: 'financas', icon: '💰', label: 'Finanças' },
+  { id: 'semana',      icon: '📅', label: 'Semana' },
+  { id: 'calendario',  icon: '📆', label: 'Cal.' },
+  { id: 'financas',    icon: '💰', label: 'Finanças' },
+  { id: 'redes',       icon: '📸', label: 'Redes' },
 ] as const;
 
 export default function App() {
@@ -29,7 +31,7 @@ export default function App() {
 
   return (
     <div style={{ background: '#0a0a0f', minHeight: '100dvh', color: '#f3f4f6' }}>
-      <div style={{ paddingBottom: 'calc(68px + env(safe-area-inset-bottom))' }}>
+      <div style={{ paddingBottom: 'calc(64px + env(safe-area-inset-bottom))' }}>
         {section === 'semana' && (
           <Semana
             weekOffset={weekOffset}
@@ -42,9 +44,10 @@ export default function App() {
           <Calendario onDaySelect={handleCalendarSelect} />
         )}
         {section === 'financas' && <Financas />}
+        {section === 'redes'    && <Redes />}
       </div>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — 4 abas */}
       <nav style={{
         position: 'fixed', bottom: 0, left: 0, right: 0,
         background: '#111118',
@@ -58,14 +61,14 @@ export default function App() {
           return (
             <button key={item.id} onClick={() => setSection(item.id)}
               style={{
-                flex: 1, height: 60,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3,
+                flex: 1, height: 58,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2,
                 cursor: 'pointer', border: 'none', background: 'none',
                 color: active ? '#60a5fa' : '#6b7280',
                 borderTop: active ? '2px solid #60a5fa' : '2px solid transparent',
               }}>
-              <span style={{ fontSize: 22 }}>{item.icon}</span>
-              <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <span style={{ fontSize: 20 }}>{item.icon}</span>
+              <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {item.label}
               </span>
             </button>

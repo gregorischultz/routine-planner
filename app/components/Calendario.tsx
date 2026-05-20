@@ -14,9 +14,13 @@ import { useState } from 'react';
 import { useLocalStorage } from './hooks';
 import {
   getSportType, sportIcon, hasTherapy,
-  MONTH_NAMES, DAY_ABBR,
+  MONTH_NAMES, DAY_ABBR, getWeekId, REDES_FORMATS,
   type CalendarEvent,
 } from './data';
+
+// Tipos mínimos para leitura do plano de redes (partilhado com Redes.tsx)
+type RedesPostRef = { formatId: string; time: string };
+type AllRedesPlan = Record<string, Partial<Record<number, RedesPostRef>>>;
 
 interface Props {
   onDaySelect: (weekOffset: number, dayIndex: number) => void;
@@ -36,6 +40,9 @@ export default function Calendario({ onDaySelect }: Props) {
 
   // Todos os eventos do utilizador
   const [calendarEvents, setCalendarEvents] = useLocalStorage<CalendarEvent[]>('calendarEvents', []);
+
+  // Plano de redes (só leitura, partilhado com Redes.tsx)
+  const [allRedesPlan] = useLocalStorage<AllRedesPlan>('redesPlan', {});
 
   // Estado do formulário de criação
   const [formOpen,  setFormOpen]  = useState(false);
@@ -187,6 +194,10 @@ export default function Calendario({ onDaySelect }: Props) {
           const dateStr  = toDateStr(date);
           // Eventos neste dia
           const dayEvents = calendarEvents.filter((e) => e.date === dateStr);
+          // Post de redes neste dia
+          const cellWeekId  = getWeekId(weekOffsetOf(date));
+          const redesPost   = (allRedesPlan[cellWeekId] ?? {})[dayIdx];
+          const redesFmt    = redesPost ? REDES_FORMATS.find((f) => f.id === redesPost.formatId) : null;
 
           return (
             <button key={idx}
@@ -208,18 +219,26 @@ export default function Calendario({ onDaySelect }: Props) {
               <span style={{ fontSize: 14, marginTop: 2 }}>{sportIcon(sport)}</span>
               {therapy && <span style={{ fontSize: 9 }}>🧠</span>}
 
-              {/* Pontos dos eventos (âmbar = todo, azul = rdv) */}
-              {dayEvents.length > 0 && (
+              {/* Pontos dos eventos + redes */}
+              {(dayEvents.length > 0 || redesFmt) && (
                 <div style={{ display: 'flex', gap: 2, marginTop: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {dayEvents.slice(0, 3).map((ev) => (
+                  {/* Ponto de post de redes (cor do formato) */}
+                  {redesFmt && (
+                    <span style={{
+                      width: 5, height: 5, borderRadius: '50%',
+                      background: redesFmt.color,
+                      flexShrink: 0,
+                    }} />
+                  )}
+                  {/* Pontos de eventos do calendário (âmbar = todo, azul = rdv) */}
+                  {dayEvents.slice(0, 2).map((ev) => (
                     <span key={ev.id} style={{
                       width: 5, height: 5, borderRadius: '50%',
                       background: EVENT_COLORS[ev.type],
                       flexShrink: 0,
                     }} />
                   ))}
-                  {/* Se há mais de 3 eventos, mostra "+" */}
-                  {dayEvents.length > 3 && (
+                  {dayEvents.length > 2 && (
                     <span style={{ fontSize: 7, color: '#6b7280', lineHeight: 1 }}>+</span>
                   )}
                 </div>
@@ -249,6 +268,10 @@ export default function Calendario({ onDaySelect }: Props) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: EVENT_COLORS.rdv, display: 'inline-block' }} />
           <span style={{ fontSize: 11, color: '#6b7280' }}>Rendez-vous</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+          <span style={{ fontSize: 11 }}>📸</span>
+          <span style={{ fontSize: 11, color: '#6b7280' }}>Post redes</span>
         </div>
       </div>
 

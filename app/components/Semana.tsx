@@ -118,7 +118,7 @@ function buildTimeline(
 
   } else if (sportType === 'jjb_off') {
     // Dia de folga: JJB em horário livre
-    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6b7280' });
+    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6A6660' });
     items.push({
       key: 'jjb', time: 'Matin — horaire libre',
       label: 'JJB — jour de repos', icon: '🥋',
@@ -129,7 +129,7 @@ function buildTimeline(
 
   } else if (sportType === 'gym') {
     // Dias normais: ginásio das 09h às 10h30
-    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6b7280' });
+    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6A6660' });
     items.push({
       key: 'gym', time: '09h00 – 10h30',
       label: `Gym — Treino ${treino}`, icon: '💪',
@@ -150,7 +150,7 @@ function buildTimeline(
 
   } else {
     // Domingo: home workout opcional
-    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6b7280' });
+    items.push({ key: 'wake', time: '07h30 – 08h00', label: 'Réveil', icon: '☀️', accent: '#6A6660' });
     items.push(mealItem('breakfast', '08h30'));
     items.push({
       key: 'home', time: '09h00 – 10h00',
@@ -466,21 +466,21 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
     <div>
 
       {/* ── HEADER FIXO ────────────────────────────────────────────────────── */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937', position: 'sticky', top: 0, zIndex: 20 }}>
+      <div style={{ background: '#0A0A0A', borderBottom: '0.5px solid #242424', position: 'sticky', top: 48, zIndex: 20 }}>
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '12px 16px 10px' }}>
 
           {/* Navegação entre semanas */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <NavBtn onClick={() => onWeekChange(weekOffset - 1)}>‹</NavBtn>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 500, color: '#F5F0E8' }}>
                 {isCurrentWeek
                   ? 'Cette semaine'
                   : `${formatDate(weekDates[0])} – ${formatDate(weekDates[6])}`}
               </div>
               {!isCurrentWeek && (
                 <button onClick={() => onWeekChange(0)}
-                  style={{ fontSize: 11, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}>
+                  style={{ fontSize: 11, color: '#C4A96B', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}>
                   ↩ Aujourd&apos;hui
                 </button>
               )}
@@ -490,15 +490,17 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
 
           {/* Seletor de dia de folga */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: 11, color: '#6b7280', flexShrink: 0 }}>Repos :</span>
+            <span style={{ fontSize: 11, color: '#6A6660', flexShrink: 0 }}>Repos :</span>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {DAY_ABBR.map((abbr, i) => (
                 <button key={i} onClick={() => setDayOffIndex(i)}
                   style={{
                     height: 28, padding: '0 8px', borderRadius: 7,
-                    fontSize: 10, fontWeight: 700, border: 'none', cursor: 'pointer',
-                    background: dayOffIndex === i ? '#059669' : '#1f2937',
-                    color:      dayOffIndex === i ? '#fff'    : '#6b7280',
+                    fontSize: 10, fontWeight: 500,
+                    border: dayOffIndex === i ? 'none' : '0.5px solid #242424',
+                    cursor: 'pointer',
+                    background: dayOffIndex === i ? '#7A9B6E' : '#181818',
+                    color:      dayOffIndex === i ? '#F5F0E8' : '#6A6660',
                   }}>
                   {abbr}
                 </button>
@@ -508,56 +510,167 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
         </div>
       </div>
 
-      {/* ── GRID DE DIAS ───────────────────────────────────────────────────── */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937', padding: '10px 12px' }}>
-        <div style={{ maxWidth: 520, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-          {DAYS.map((_, i) => {
-            const sport     = getSportType(i, dayOffIndex);
-            const isSelected = selectedDay === i;
-            const isToday    = isCurrentWeek && i === todayIndex;
-            const isDone     = !!sportDone[`${weekId}-${i}`];
+      {/* ── GRADE DE DIAS — novo layout Renitēns ───────────────────────────── */}
+      <div style={{ background: '#1A1A1A', borderBottom: '0.5px solid #242424', overflowX: 'auto' }}>
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)',
+          gap: 1, background: '#1A1A1A', minWidth: 380,
+        }}>
+          {Array.from({ length: 7 }, (_, i) => {
+            const isSelected  = selectedDay === i;
+            const isToday     = isCurrentWeek && i === todayIndex;
+            const sport_i     = getSportType(i, dayOffIndex);
+            const treino_i    = sport_i === 'gym' ? getGymTreino(i, dayOffIndex, startWithA) : null;
+            const therapy_i   = hasTherapy(i);
+            const hasWork_i   = i !== dayOffIndex;
+            const dayKey_i    = `${weekId}-${i}`;
+            const sportIsDone = !!sportDone[dayKey_i];
+            const workTime_i  = workHours[dayKey_i] ?? { start: '13:15', end: '20:15' };
+            const scheduled_i = studySchedule[i] ?? [];
+            const dayStudDone = studiesDone[dayKey_i] ?? [];
+
+            // Sport label + active pill key
+            const activeSportKey = sport_i === 'gym' ? 'gym'
+              : (sport_i === 'jjb_fixed' || sport_i === 'jjb_off') ? 'jjb' : 'home';
+            const sportLabel = sport_i === 'gym'
+              ? `Gym ${treino_i ?? ''}`
+              : sport_i === 'jjb_fixed' ? 'JJB fixe'
+              : sport_i === 'jjb_off'   ? 'JJB repos'
+              : 'Home workout';
+            const sportTime = sport_i === 'jjb_fixed' ? '07h30' : '09h00';
+
+            const sportPillsNode = (
+              <div style={{ display: 'flex', gap: 3, marginTop: 4, flexWrap: 'wrap' }}>
+                {[
+                  { id: 'gym',  label: 'Gym',  color: '#7A9B6E' },
+                  { id: 'jjb',  label: 'JJB',  color: '#C4A96B' },
+                  { id: 'home', label: 'Home', color: '#8B82A8' },
+                ].map(({ id, label, color }) => {
+                  const active = id === activeSportKey;
+                  return (
+                    <span key={id} style={{
+                      fontSize: 7, padding: '2px 5px', borderRadius: 6,
+                      border: `0.5px solid ${active ? color : '#1E1E1E'}`,
+                      color: active ? color : '#6A6660',
+                      background: active ? `${color}1A` : 'transparent',
+                    }}>
+                      {label}
+                    </span>
+                  );
+                })}
+              </div>
+            );
 
             return (
-              <button key={i} onClick={() => onDayChange(i)}
-                style={{
-                  position: 'relative',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center',
-                  padding: '8px 2px', borderRadius: 14, border: 'none',
-                  cursor: 'pointer', minHeight: 62,
-                  background: isSelected ? '#2563eb' : 'rgba(31,41,55,0.7)',
-                  color: isSelected ? '#fff' : '#9ca3af',
-                  // Sombra azul suave no dia selecionado
-                  boxShadow: isSelected ? '0 4px 20px rgba(37,99,235,0.3)' : undefined,
-                }}>
+              <div key={i} onClick={() => onDayChange(i)} style={{
+                background: isSelected ? '#111111' : '#0A0A0A',
+                cursor: 'pointer', position: 'relative',
+              }}>
 
-                {/* Ponto azul = hoje */}
-                {isToday && (
-                  <span style={{ position: 'absolute', top: 4, right: 4, width: 6, height: 6, borderRadius: '50%', background: '#93c5fd' }} />
+                {/* Barra dourada no topo — só hoje */}
+                {isToday && <div style={{ height: 2, background: '#C4A96B', width: '100%' }} />}
+
+                {/* Cabeçalho da coluna */}
+                <div style={{ padding: '10px 8px 8px', borderBottom: '0.5px solid #1A1A1A', textAlign: 'center' }}>
+                  <div style={{ fontSize: 8, letterSpacing: '0.14em', textTransform: 'uppercase', color: isSelected ? '#9A9590' : '#6A6660' }}>
+                    {DAY_ABBR[i]}
+                  </div>
+                  <div style={{
+                    fontFamily: "'Playfair Display', serif", fontSize: 18, lineHeight: 1.2, marginTop: 2,
+                    color: isToday ? '#C4A96B' : isSelected ? '#F5F0E8' : '#9A9590',
+                  }}>
+                    {weekDates[i].getDate()}
+                  </div>
+                  <div style={{ fontSize: 12, marginTop: 2 }}>{sportIcon(sport_i)}</div>
+                </div>
+
+                {/* Mini-cards */}
+                <div style={{ padding: '6px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+
+                  {/* Trabalho */}
+                  {hasWork_i && (
+                    <MiniCard
+                      accent="#B87355" type="TRAV."
+                      title="Grand Frais"
+                      sub={`${workTime_i.start.replace(':', 'h')}–${workTime_i.end.replace(':', 'h')}`}
+                      time={workTime_i.start.replace(':', 'h')}
+                    />
+                  )}
+
+                  {/* Sport */}
+                  <MiniCard
+                    accent="#C4A96B" type="SPORT"
+                    title={sportLabel}
+                    time={sportTime}
+                    done={sportIsDone}
+                    onCheck={(e) => {
+                      e.stopPropagation();
+                      setSportDone((prev) => ({ ...prev, [dayKey_i]: !prev[dayKey_i] }));
+                    }}
+                    extra={sportPillsNode}
+                  />
+
+                  {/* Terapia */}
+                  {therapy_i && (
+                    <MiniCard
+                      accent="#6B8FA8" type="THER."
+                      title="Session"
+                      sub="Thérapie" time="10h45"
+                    />
+                  )}
+
+                  {/* Estudos */}
+                  {scheduled_i.length > 0 && (
+                    <MiniCard
+                      accent="#7A9B6E" type="ÉTUDES"
+                      title={scheduled_i
+                        .map((id) => STUDIES.find((s) => s.id === id)?.label.split(' ')[0] ?? id)
+                        .join(' · ')}
+                      sub={`${dayStudDone.filter((id) => scheduled_i.includes(id)).length}/${scheduled_i.length}`}
+                      done={scheduled_i.every((id) => dayStudDone.includes(id))}
+                    />
+                  )}
+                </div>
+
+                {/* Domingo — resumo semanal */}
+                {i === 6 && (
+                  <div style={{ padding: '0 6px 6px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 3, marginBottom: 4 }}>
+                      {[
+                        { lbl: 'GYM',  val: weekStats.gymDone,    tot: weekStats.gymTotal },
+                        { lbl: 'JJB',  val: weekStats.jjbDone,    tot: weekStats.jjbTotal },
+                        { lbl: 'PERM', val: weekStats.permisDays,  tot: 7 },
+                      ].map(({ lbl, val, tot }) => (
+                        <div key={lbl} style={{ background: '#181818', borderRadius: 7, padding: '5px 3px', textAlign: 'center' }}>
+                          <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, color: '#F5F0E8', lineHeight: 1 }}>{val}</div>
+                          <div style={{ fontSize: 6, color: '#6A6660', letterSpacing: '0.1em', marginTop: 2, textTransform: 'uppercase' }}>{lbl}</div>
+                          <div style={{ fontSize: 6, color: '#3A3A38' }}>/{tot}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ background: '#0D0D0D', border: '0.5px solid #1E1E1E', borderRadius: 8, padding: '5px 6px', textAlign: 'center' }}>
+                      <div style={{ fontSize: 7, color: '#3A3A38', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Reset</div>
+                      <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 8, color: '#3A3A38', marginTop: 2 }}>Dim 23h59</div>
+                    </div>
+                  </div>
                 )}
-
-                <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.04em' }}>{DAY_ABBR[i]}</span>
-                <span style={{ fontSize: 11, color: isSelected ? '#bfdbfe' : '#4b5563', marginTop: 1 }}>{weekDates[i].getDate()}</span>
-                <span style={{ fontSize: 16, marginTop: 2 }}>{sportIcon(sport)}</span>
-
-                {/* Check verde se o treino foi marcado como feito */}
-                {isDone && <span style={{ fontSize: 9, color: '#4ade80', marginTop: 1, fontWeight: 900 }}>✓</span>}
-              </button>
+              </div>
             );
           })}
         </div>
       </div>
 
       {/* ── ABAS ────────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937' }}>
+      <div style={{ background: '#0A0A0A', borderBottom: '0.5px solid #242424' }}>
         <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex' }}>
           {(['schedule', 'nutrition', 'studies'] as Tab[]).map((tab) => (
             <button key={tab} onClick={() => setActiveTab(tab)}
               style={{
                 flex: 1, height: 44,
-                fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
+                fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em',
                 border: 'none', background: 'none', cursor: 'pointer',
-                color: activeTab === tab ? '#60a5fa' : '#6b7280',
-                borderBottom: activeTab === tab ? '2px solid #60a5fa' : '2px solid transparent',
+                color: activeTab === tab ? '#F5F0E8' : '#6A6660',
+                borderBottom: activeTab === tab ? '1.5px solid #F5F0E8' : '1.5px solid transparent',
               }}>
               {tab === 'schedule' ? '📅 Planning' : tab === 'nutrition' ? '🥗 Repas' : '📚 Études'}
             </button>
@@ -577,9 +690,9 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
             {/* Cabeçalho do dia */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 18 }}>
               <div>
-                <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>
+                <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: '#F5F0E8', margin: 0 }}>
                   {DAYS[selectedDay]}
-                  <span style={{ fontSize: 13, fontWeight: 400, color: '#6b7280', marginLeft: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 400, color: '#6A6660', marginLeft: 8 }}>
                     {formatDate(weekDates[selectedDay])}
                   </span>
                 </h2>
@@ -591,7 +704,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
               {/* Botão de alternância Treino A/B — só aparece em dias de ginásio */}
               <div style={{ display: 'flex', gap: 8 }}>
                 {sportType === 'gym' && (
-                  <SmallBtn onClick={() => setStartWithA(!startWithA)} color="#60a5fa">
+                  <SmallBtn onClick={() => setStartWithA(!startWithA)} color="#C4A96B">
                     Treino {startWithA ? 'A' : 'B'}
                   </SmallBtn>
                 )}
@@ -599,7 +712,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                 {exerciseList && (
                   <SmallBtn
                     onClick={toggleSport}
-                    color={sportDone[dayKey] ? '#4ade80' : '#6b7280'}
+                    color={sportDone[dayKey] ? '#7A9B6E' : '#6A6660'}
                     active={!!sportDone[dayKey]}>
                     {sportDone[dayKey] ? '✓ Feito' : 'Marcar'}
                   </SmallBtn>
@@ -614,7 +727,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                   style={{
                     display: 'flex', alignItems: 'flex-start', gap: 12,
                     // Refeições têm fundo verde muito suave; os outros têm o fundo padrão
-                    background: item.isMeal ? 'rgba(5,46,22,0.25)' : '#111118',
+                    background: item.isMeal ? 'rgba(5,46,22,0.25)' : '#141414',
                     borderLeft: `3px solid ${item.accent}`,
                     borderRadius: 12,
                     padding: '10px 14px',
@@ -625,18 +738,18 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
 
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {/* Hora */}
-                    <div style={{ fontSize: 11, color: '#6b7280', fontWeight: 600, marginBottom: 2 }}>
+                    <div style={{ fontSize: 11, color: '#6A6660', fontWeight: 500, marginBottom: 2 }}>
                       {item.time}
                     </div>
                     {/* Título */}
-                    <div style={{ fontSize: 14, fontWeight: 600, color: item.isMeal ? '#a7f3d0' : '#f3f4f6' }}>
+                    <div style={{ fontSize: 14, fontWeight: 500, color: item.isMeal ? '#a7f3d0' : '#F5F0E8' }}>
                       {item.label}
                     </div>
                     {/* Subtítulo — para refeições mostra a opção selecionada; para outros mostra descrição */}
                     {item.subtitle && (
                       <div style={{
                         fontSize: 12,
-                        color: item.isMeal ? '#6ee7b7' : '#9ca3af',
+                        color: item.isMeal ? '#6ee7b7' : '#6A6660',
                         marginTop: 2,
                         // Evita que texto longo quebre o layout
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
@@ -650,7 +763,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                   {item.isWork && hasWork && !editingWork && (
                     <button
                       onClick={() => { setWorkEditStart(workTime.start); setWorkEditEnd(workTime.end); setEditingWork(true); }}
-                      style={{ width: 36, height: 36, borderRadius: 9, background: '#1f2937', border: 'none', fontSize: 14, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      style={{ width: 36, height: 36, borderRadius: 9, background: '#181818', border: 'none', fontSize: 14, cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       ✏️
                     </button>
                   )}
@@ -674,15 +787,15 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                         style={{
                           display: 'flex', alignItems: 'center', gap: 12,
                           padding: '10px 14px', borderRadius: 12,
-                          background: '#111118', borderLeft: `3px solid ${color}`,
+                          background: '#141414', borderLeft: `3px solid ${color}`,
                         }}>
                         <span style={{ fontSize: 18, flexShrink: 0 }}>{icon}</span>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <div style={{ fontSize: 14, fontWeight: 500, color: '#F5F0E8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {ev.title}
                           </div>
                           {ev.time && (
-                            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                            <div style={{ fontSize: 11, color: '#6A6660', marginTop: 2 }}>
                               {ev.time.replace(':', 'h')}
                             </div>
                           )}
@@ -708,8 +821,8 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                 <div style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '12px 14px', borderRadius: 12,
-                  background: '#111118',
-                  border: `1px solid ${dayRedesFormat.color}25`,
+                  background: '#141414',
+                  border: `0.5px solid ${dayRedesFormat.color}25`,
                   borderLeft: `3px solid ${dayRedesFormat.color}`,
                 }}>
                   {/* Ícone do formato */}
@@ -723,10 +836,10 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                     </span>
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#e5e7eb', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#E8E3D8', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {dayRedesFormat.label}
                     </div>
-                    <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
+                    <div style={{ fontSize: 11, color: '#6A6660', marginTop: 2 }}>
                       🕐 {dayRedesPost.time.replace(':', 'h')} · Instagram · {dayRedesFormat.duration}
                     </div>
                   </div>
@@ -744,14 +857,14 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
 
             {/* ── EDITOR DE HORÁRIO DE TRABALHO ────────────────── */}
             {editingWork && hasWork && (
-              <div style={{ background: '#111118', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 14, padding: 16, marginBottom: 20 }}>
+              <div style={{ background: '#141414', border: '0.5px solid rgba(196,169,107,0.3)', borderRadius: 14, padding: 16, marginBottom: 20 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#f59e0b', marginBottom: 10 }}>
                   ✏️ Éditer horaire travail
                 </div>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                   <input type="time" value={workEditStart} onChange={(e) => setWorkEditStart(e.target.value)}
                     style={timeInputStyle} />
-                  <span style={{ color: '#6b7280' }}>–</span>
+                  <span style={{ color: '#6A6660' }}>–</span>
                   <input type="time" value={workEditEnd} onChange={(e) => setWorkEditEnd(e.target.value)}
                     style={timeInputStyle} />
                 </div>
@@ -759,7 +872,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                   <button onClick={saveWorkHours} style={{ flex: 1, height: 44, borderRadius: 10, background: '#059669', border: 'none', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
                     Sauvegarder
                   </button>
-                  <button onClick={() => setEditingWork(false)} style={{ height: 44, padding: '0 16px', borderRadius: 10, background: '#1f2937', border: 'none', color: '#9ca3af', fontSize: 14, cursor: 'pointer' }}>
+                  <button onClick={() => setEditingWork(false)} style={{ height: 44, padding: '0 16px', borderRadius: 10, background: '#181818', border: 'none', color: '#9A9590', fontSize: 14, cursor: 'pointer' }}>
                     Annuler
                   </button>
                 </div>
@@ -770,7 +883,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
             {exerciseList && (
               <div style={{ marginBottom: 24 }}>
                 <SectionLabel title={sportType === 'gym' ? `Treino ${treino} — Full Body` : 'Home Workout'} right={`${exerciseList.length} exercices`} />
-                <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
+                <div style={{ background: '#141414', border: '0.5px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
                   {exerciseList.map((ex, exIdx) => {
                     const checks    = getChecks(exIdx);
                     const doneSets  = checks.filter(Boolean).length;
@@ -780,7 +893,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                       <div key={exIdx}
                         style={{
                           padding: '12px 14px',
-                          borderBottom: exIdx < exerciseList.length - 1 ? '1px solid #1f2937' : undefined,
+                          borderBottom: exIdx < exerciseList.length - 1 ? '0.5px solid #242424' : undefined,
                           // Fundo verde subtil quando todas as séries estão feitas
                           background: allDone ? 'rgba(6,78,59,0.15)' : undefined,
                           transition: 'background 0.3s',
@@ -798,7 +911,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                             {allDone && <span style={{ fontSize: 13, color: '#4ade80' }}>✓</span>}
                           </div>
                           {/* Badge "séries feitas / total × reps" */}
-                          <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: '#60a5fa', background: 'rgba(37,99,235,0.15)', padding: '2px 8px', borderRadius: 6 }}>
+                          <span style={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 700, color: '#C4A96B', background: 'rgba(196,169,107,0.12)', padding: '2px 8px', borderRadius: 6 }}>
                             {doneSets}/{ex.sets}×{ex.reps}
                           </span>
                         </div>
@@ -811,9 +924,9 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                               <button key={setIdx} onClick={() => toggleSet(exIdx, setIdx)}
                                 style={{
                                   width: 36, height: 36, borderRadius: 9,
-                                  border: `1px solid ${done ? '#10b981' : '#374151'}`,
-                                  background: done ? '#059669' : '#1a2235',
-                                  color: done ? '#fff' : '#6b7280',
+                                  border: `0.5px solid ${done ? '#7A9B6E' : '#242424'}`,
+                                  background: done ? '#7A9B6E' : '#181818',
+                                  color: done ? '#fff' : '#6A6660',
                                   fontSize: 12, fontWeight: 700, cursor: 'pointer',
                                   transition: 'all 0.15s',
                                 }}>
@@ -831,7 +944,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
             )}
 
             {/* ── STATS DA SEMANA ───────────────────────────────── */}
-            <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, padding: 16 }}>
+            <div style={{ background: '#141414', border: '0.5px solid #242424', borderRadius: 14, padding: 16 }}>
               <SectionLabel title="Stats da semana" />
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 4 }}>
                 <StatBar label="Gym 💪"    done={weekStats.gymDone}   total={weekStats.gymTotal}   color="#3b82f6" />
@@ -849,8 +962,8 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
         {activeTab === 'nutrition' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Repas</h2>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>{DAYS[selectedDay]}</span>
+              <h2 style={{ fontSize: 20, fontWeight: 500, color: '#F5F0E8', margin: 0 }}>Repas</h2>
+              <span style={{ fontSize: 12, color: '#6A6660' }}>{DAYS[selectedDay]}</span>
             </div>
 
             {Object.entries(NUTRITION).map(([key, meal]) => {
@@ -863,11 +976,11 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
               const isAdding = addingMeal === key;
 
               return (
-                <div key={key} style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
+                <div key={key} style={{ background: '#141414', border: '0.5px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
 
                   {/* Cabeçalho do slot */}
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: '#e5e7eb' }}>{meal.label}</span>
+                  <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: 14, fontWeight: 700, color: '#E8E3D8' }}>{meal.label}</span>
                     <span style={{ fontSize: 10, color: '#4b5563' }}>{baseLen + custom.length} opções</span>
                   </div>
 
@@ -882,14 +995,14 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                             display: 'flex', alignItems: 'flex-start', gap: 10,
                             padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
                             textAlign: 'left', minHeight: 44,
-                            border: `1px solid ${isSel ? 'rgba(16,185,129,0.4)' : 'transparent'}`,
-                            background: isSel ? 'rgba(6,78,59,0.2)' : 'rgba(31,41,55,0.5)',
+                            border: `0.5px solid ${isSel ? 'rgba(122,155,110,0.4)' : 'transparent'}`,
+                            background: isSel ? 'rgba(122,155,110,0.12)' : 'rgba(31,41,55,0.3)',
                           }}>
                           {/* Círculo indicador de seleção */}
                           <span style={{
                             width: 18, height: 18, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                            border: `2px solid ${isSel ? '#10b981' : '#4b5563'}`,
-                            background: isSel ? '#10b981' : 'transparent',
+                            border: `2px solid ${isSel ? '#7A9B6E' : '#4b5563'}`,
+                            background: isSel ? '#7A9B6E' : 'transparent',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: 10, color: '#fff',
                           }}>
@@ -913,7 +1026,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                               flex: 1, display: 'flex', alignItems: 'flex-start', gap: 10,
                               padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
                               textAlign: 'left', minHeight: 44,
-                              border: `1px solid ${isSel ? 'rgba(251,191,36,0.4)' : 'rgba(251,191,36,0.1)'}`,
+                              border: `0.5px solid ${isSel ? 'rgba(196,169,107,0.4)' : 'rgba(196,169,107,0.1)'}`,
                               background: isSel ? 'rgba(120,53,15,0.2)' : 'rgba(120,53,15,0.08)',
                             }}>
                             <span style={{
@@ -964,8 +1077,8 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                           }}
                           style={{
                             flex: 1, padding: '10px 12px', borderRadius: 10,
-                            background: '#1f2937', color: '#fff',
-                            border: '1px solid #374151', fontSize: 13, outline: 'none',
+                            background: '#181818', color: '#F5F0E8',
+                            border: '0.5px solid #2E2E2E', fontSize: 13, outline: 'none',
                           }}
                         />
                         {/* Confirmar */}
@@ -977,7 +1090,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                           }}
                           style={{
                             padding: '0 14px', borderRadius: 10, border: 'none',
-                            background: '#059669', color: '#fff', fontWeight: 700,
+                            background: '#7A9B6E', color: '#fff', fontWeight: 700,
                             fontSize: 13, cursor: 'pointer',
                           }}>
                           OK
@@ -987,7 +1100,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                           onClick={() => { setAddingMeal(null); setNewMealText(''); }}
                           style={{
                             padding: '0 12px', borderRadius: 10, border: 'none',
-                            background: '#1f2937', color: '#6b7280',
+                            background: '#181818', color: '#6A6660',
                             fontSize: 13, cursor: 'pointer',
                           }}>
                           ✕
@@ -1000,11 +1113,11 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                         style={{
                           display: 'flex', alignItems: 'center', gap: 8,
                           padding: '9px 12px', borderRadius: 10, cursor: 'pointer',
-                          border: '1px dashed #374151', background: 'transparent',
-                          color: '#4b5563', fontSize: 12, fontWeight: 600,
+                          border: '0.5px dashed #242424', background: 'transparent',
+                          color: '#6A6660', fontSize: 12, fontWeight: 500,
                           marginTop: 2,
                         }}>
-                        <span style={{ fontSize: 16, lineHeight: 1, color: '#6b7280' }}>+</span>
+                        <span style={{ fontSize: 16, lineHeight: 1, color: '#6A6660' }}>+</span>
                         Ajouter une option
                       </button>
                     )}
@@ -1021,8 +1134,8 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
         {activeTab === 'studies' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h2 style={{ fontSize: 20, fontWeight: 800, color: '#fff', margin: 0 }}>Études</h2>
-              <span style={{ fontSize: 12, color: '#6b7280' }}>{DAYS[selectedDay]}</span>
+              <h2 style={{ fontSize: 20, fontWeight: 500, color: '#F5F0E8', margin: 0 }}>Études</h2>
+              <span style={{ fontSize: 12, color: '#6A6660' }}>{DAYS[selectedDay]}</span>
             </div>
 
             {/* ══════════════════════════════════════════════════════
@@ -1031,10 +1144,10 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                 Só depois de registar é que o plano da semana
                 atualiza com as sugestões para os dias restantes.
             ══════════════════════════════════════════════════════ */}
-            <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ background: '#141414', border: '0.5px solid #242424', borderRadius: 14, overflow: 'hidden' }}>
               {/* Cabeçalho da secção de log */}
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb' }}>
+              <div style={{ padding: '12px 16px', borderBottom: '0.5px solid #242424', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: '#E8E3D8' }}>
                   📝 O que estudei hoje
                 </span>
                 {/* Contador: quantos foram registados */}
@@ -1062,8 +1175,8 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                         display: 'flex', alignItems: 'center', gap: 12,
                         padding: '12px 14px', borderRadius: 12, textAlign: 'left',
                         // Feito = fundo verde suave; por fazer = fundo cinza
-                        border: `1px solid ${isDone ? study.color + '40' : '#1f2937'}`,
-                        background: isDone ? study.color + '12' : 'rgba(31,41,55,0.4)',
+                        border: `0.5px solid ${isDone ? study.color + '40' : '#242424'}`,
+                        background: isDone ? study.color + '12' : '#141414',
                         opacity: isDisabled ? 0.3 : 1,
                         cursor: isDisabled ? 'not-allowed' : 'pointer',
                         minHeight: 52, transition: 'all 0.15s',
@@ -1072,7 +1185,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                       {/* Círculo de estado */}
                       <div style={{
                         width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                        border: `2px solid ${isDone ? 'transparent' : '#374151'}`,
+                        border: `2px solid ${isDone ? 'transparent' : '#2E2E2E'}`,
                         background: isDone ? study.color : 'transparent',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                       }}>
@@ -1087,14 +1200,14 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                         }}>
                           {study.label}
                         </div>
-                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>
+                        <div style={{ fontSize: 11, color: '#6A6660', marginTop: 1 }}>
                           {study.freq}
                         </div>
                       </div>
 
                       {/* Direita: progresso semanal + prioridade */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, flexShrink: 0 }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: study.color, background: '#1a2235', padding: '2px 7px', borderRadius: 6 }}>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: study.color, background: '#181818', padding: '2px 7px', borderRadius: 6 }}>
                           P{study.priority}
                         </span>
                         <span style={{ fontSize: 10, color: isComplete ? '#4ade80' : '#4b5563', fontWeight: 600 }}>
@@ -1112,10 +1225,10 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                 Gerado AUTOMATICAMENTE com base no que foi registado.
                 Mostra o que falta fazer nos dias restantes.
             ══════════════════════════════════════════════════════ */}
-            <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, padding: 14 }}>
+            <div style={{ background: '#141414', border: '0.5px solid #242424', borderRadius: 14, padding: 14 }}>
               {/* Título + explicação */}
               <div style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6b7280', marginBottom: 4 }}>
+                <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6A6660', marginBottom: 4 }}>
                   Plano da semana
                 </div>
                 <div style={{ fontSize: 11, color: '#4b5563' }}>
@@ -1138,9 +1251,9 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                       style={{
                         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                         padding: '8px 3px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                        background: isSel ? '#2563eb' : isToday ? 'rgba(37,99,235,0.12)' : 'transparent',
+                        background: isSel ? '#1E3A5F' : isToday ? 'rgba(37,99,235,0.12)' : 'transparent',
                       }}>
-                      <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', color: isSel ? '#fff' : '#6b7280' }}>
+                      <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.04em', color: isSel ? '#F5F0E8' : '#6A6660' }}>
                         {DAY_ABBR[d]}
                       </span>
                       <span style={{ fontSize: 11, color: isSel ? '#bfdbfe' : '#4b5563' }}>
@@ -1172,7 +1285,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                 {STUDIES.map((s) => (
                   <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
-                    <span style={{ fontSize: 10, color: '#6b7280' }}>{s.label.split(' ')[0]}</span>
+                    <span style={{ fontSize: 10, color: '#6A6660' }}>{s.label.split(' ')[0]}</span>
                   </div>
                 ))}
               </div>
@@ -1184,7 +1297,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
                 <span style={{ fontSize: 18 }}>📚</span>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#f87171' }}>Rappel — Permis</span>
               </div>
-              <p style={{ fontSize: 12, color: '#9ca3af', margin: 0 }}>
+              <p style={{ fontSize: 12, color: '#9A9590', margin: 0 }}>
                 Étudier <strong style={{ color: '#d1d5db' }}>chaque jour après le sport</strong>. Priorité absolue.
               </p>
             </div>
@@ -1205,7 +1318,7 @@ export default function Semana({ weekOffset, onWeekChange, selectedDay, onDayCha
 function NavBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
     <button onClick={onClick}
-      style={{ minWidth: 44, minHeight: 44, background: '#1f2937', color: '#9ca3af', border: 'none', borderRadius: 10, fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      style={{ minWidth: 44, minHeight: 44, background: '#181818', color: '#6A6660', border: '0.5px solid #242424', borderRadius: 10, fontSize: 22, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       {children}
     </button>
   );
@@ -1217,9 +1330,9 @@ function SmallBtn({ onClick, children, color, active }: { onClick: () => void; c
     <button onClick={onClick}
       style={{
         padding: '6px 12px', borderRadius: 9,
-        border: `1px solid ${active ? color + '60' : '#374151'}`,
-        background: active ? color + '20' : '#1a2235',
-        color, fontWeight: 700, fontSize: 12, cursor: 'pointer',
+        border: `0.5px solid ${active ? color + '60' : '#242424'}`,
+        background: active ? color + '20' : '#181818',
+        color, fontWeight: 500, fontSize: 12, cursor: 'pointer',
         minHeight: 36,
       }}>
       {children}
@@ -1231,10 +1344,10 @@ function SmallBtn({ onClick, children, color, active }: { onClick: () => void; c
 function SectionLabel({ title, right }: { title: string; right?: string }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-      <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6b7280' }}>
+      <span style={{ fontSize: 10, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.09em', color: '#6A6660' }}>
         {title}
       </span>
-      {right && <span style={{ fontSize: 11, color: '#4b5563' }}>{right}</span>}
+      {right && <span style={{ fontSize: 11, color: '#6A6660' }}>{right}</span>}
     </div>
   );
 }
@@ -1245,10 +1358,10 @@ function StatBar({ label, done, total, color }: { label: string; done: number; t
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 13, color: '#9ca3af' }}>{label}</span>
+        <span style={{ fontSize: 13, color: '#9A9590' }}>{label}</span>
         <span style={{ fontSize: 13, fontWeight: 700, color }}>{done}/{total}</span>
       </div>
-      <div style={{ height: 5, borderRadius: 4, background: '#1f2937' }}>
+      <div style={{ height: 5, borderRadius: 4, background: '#1A1A1A' }}>
         <div style={{ height: '100%', borderRadius: 4, background: color, width: `${pct}%`, transition: 'width 0.4s ease' }} />
       </div>
     </div>
@@ -1258,7 +1371,63 @@ function StatBar({ label, done, total, color }: { label: string; done: number; t
 // Estilo partilhado para inputs de hora
 const timeInputStyle: React.CSSProperties = {
   flex: 1, padding: '10px 12px', borderRadius: 9,
-  background: '#1f2937', color: '#fff',
-  border: '1px solid #374151', fontSize: 15,
+  background: '#181818', color: '#F5F0E8',
+  border: '0.5px solid #2E2E2E', fontSize: 15,
   outline: 'none',
 };
+
+// ─────────────────────────────────────────────
+// MiniCard — card compacto na grade de dias
+// ─────────────────────────────────────────────
+
+function MiniCard({
+  accent, type, title, sub, done, time, onCheck, extra,
+}: {
+  accent: string;
+  type: string;
+  title: string;
+  sub?: string;
+  done?: boolean;
+  time?: string;
+  onCheck?: (e: React.MouseEvent) => void;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <div style={{ background: '#141414', border: '0.5px solid #1E1E1E', borderRadius: 8, overflow: 'hidden' }}>
+      {/* Barra de acento */}
+      <div style={{ height: 2, background: accent }} />
+      {/* Inner */}
+      <div style={{ padding: '7px 8px 6px' }}>
+        <div style={{ fontSize: 7, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#6A6660' }}>
+          {type}
+        </div>
+        <div style={{ fontSize: 11, fontWeight: 500, color: '#E8E3D8', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {title}
+        </div>
+        {sub && (
+          <div style={{ fontSize: 9, color: '#6A6660', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {sub}
+          </div>
+        )}
+        {extra}
+      </div>
+      {/* Footer */}
+      <div style={{ borderTop: '0.5px solid #1A1A1A', padding: '4px 8px 5px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div
+          onClick={onCheck}
+          style={{
+            width: 11, height: 11, borderRadius: 3, flexShrink: 0,
+            border: `0.5px solid ${done ? 'transparent' : '#2E2E2E'}`,
+            background: done ? '#7A9B6E' : 'transparent',
+            cursor: onCheck ? 'pointer' : 'default',
+          }}
+        />
+        {time && (
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 8, color: '#6A6660' }}>
+            {time}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

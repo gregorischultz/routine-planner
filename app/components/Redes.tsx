@@ -107,19 +107,19 @@ export default function Redes() {
     <div>
 
       {/* ── HEADER ────────────────────────────────────────────────────── */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937', position: 'sticky', top: 0, zIndex: 20 }}>
+      <div style={{ background: '#0A0A0A', borderBottom: '0.5px solid #242424', position: 'sticky', top: 48, zIndex: 20 }}>
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '12px 16px 10px' }}>
 
           {/* Navegação de semana */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <button onClick={() => { setWeekOffset((w) => w - 1); setSelectedDay(null); }} style={navBtnStyle}>‹</button>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>
+              <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 500, color: '#F5F0E8' }}>
                 {isCurrentWeek ? 'Esta semana' : `${formatDate(weekDates[0])} – ${formatDate(weekDates[6])}`}
               </div>
               {!isCurrentWeek && (
                 <button onClick={() => { setWeekOffset(0); setSelectedDay(null); }}
-                  style={{ fontSize: 11, color: '#60a5fa', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}>
+                  style={{ fontSize: 11, color: '#C4A96B', background: 'none', border: 'none', cursor: 'pointer', marginTop: 2 }}>
                   ↩ Semana atual
                 </button>
               )}
@@ -140,18 +140,18 @@ export default function Redes() {
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                     padding: '7px 2px', borderRadius: 12, border: 'none', cursor: 'pointer',
-                    background: isSel ? '#2563eb' : isToday ? 'rgba(37,99,235,0.15)' : 'rgba(31,41,55,0.6)',
-                    boxShadow: isSel ? '0 4px 16px rgba(37,99,235,0.3)' : undefined,
+                    background: isSel ? '#1E3266' : isToday ? 'rgba(196,169,107,0.08)' : '#181818',
+                    boxShadow: isSel ? '0 4px 16px rgba(30,50,102,0.4)' : undefined,
                     minHeight: 70, position: 'relative',
                   }}>
                   {/* Ponto de "hoje" */}
                   {isToday && !isSel && (
-                    <span style={{ position: 'absolute', top: 4, right: 4, width: 5, height: 5, borderRadius: '50%', background: '#93c5fd' }} />
+                    <span style={{ position: 'absolute', top: 4, right: 4, width: 5, height: 5, borderRadius: '50%', background: '#C4A96B' }} />
                   )}
-                  <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: '0.04em', color: isSel ? '#fff' : '#9ca3af' }}>
+                  <span style={{ fontSize: 9, fontWeight: 500, letterSpacing: '0.04em', color: isSel ? '#F5F0E8' : '#6A6660' }}>
                     {DAY_ABBR[d]}
                   </span>
-                  <span style={{ fontSize: 11, color: isSel ? '#bfdbfe' : '#4b5563' }}>
+                  <span style={{ fontSize: 11, color: isSel ? '#bfdbfe' : '#3A3A38' }}>
                     {weekDates[d].getDate()}
                   </span>
                   {/* Código do formato atribuído (ou +) */}
@@ -163,12 +163,12 @@ export default function Redes() {
                       }}>
                         {fmt.code}
                       </span>
-                      <span style={{ fontSize: 9, color: isSel ? '#bfdbfe' : '#6b7280' }}>
+                      <span style={{ fontSize: 9, color: isSel ? '#bfdbfe' : '#6A6660' }}>
                         {post!.time.replace(':', 'h')}
                       </span>
                     </>
                   ) : (
-                    <span style={{ fontSize: 16, color: isSel ? '#bfdbfe' : '#374151', marginTop: 4 }}>+</span>
+                    <span style={{ fontSize: 16, color: isSel ? '#bfdbfe' : '#2E2E2E', marginTop: 4 }}>+</span>
                   )}
                 </button>
               );
@@ -178,7 +178,7 @@ export default function Redes() {
       </div>
 
       {/* ── ABAS ─────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#111118', borderBottom: '1px solid #1f2937' }}>
+      <div style={{ background: '#0A0A0A', borderBottom: '0.5px solid #242424' }}>
         <div style={{ maxWidth: 520, margin: '0 auto', display: 'flex' }}>
           {([
             { id: 'plan',      label: `📋 Plano (${postCount})` },
@@ -187,11 +187,11 @@ export default function Redes() {
           ] as { id: RedesTab; label: string }[]).map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
               style={{
-                flex: 1, height: 44, fontSize: 11, fontWeight: 700,
+                flex: 1, height: 44, fontSize: 11, fontWeight: 500,
                 textTransform: 'uppercase', letterSpacing: '0.04em',
                 border: 'none', background: 'none', cursor: 'pointer',
-                color: activeTab === tab.id ? '#60a5fa' : '#6b7280',
-                borderBottom: activeTab === tab.id ? '2px solid #60a5fa' : '2px solid transparent',
+                color: activeTab === tab.id ? '#F5F0E8' : '#6A6660',
+                borderBottom: activeTab === tab.id ? '1.5px solid #F5F0E8' : '1.5px solid transparent',
               }}>
               {tab.label}
             </button>
@@ -226,7 +226,7 @@ export default function Redes() {
             {/* ── Posts planeados esta semana ──────────────── */}
             {postCount > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b7280' }}>
+                <div style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6A6660' }}>
                   Posts desta semana
                 </div>
                 {Array.from({ length: 7 }, (_, d) => {
@@ -239,7 +239,7 @@ export default function Redes() {
                       style={{
                         display: 'flex', alignItems: 'center', gap: 12,
                         padding: '12px 14px', borderRadius: 12,
-                        background: '#111118', border: `1px solid ${fmt.color}30`,
+                        background: '#141414', border: `0.5px solid ${fmt.color}20`,
                         borderLeft: `3px solid ${fmt.color}`,
                       }}>
                       {/* Código */}
@@ -250,16 +250,16 @@ export default function Redes() {
                         <span style={{ fontSize: 11, fontWeight: 900, color: fmt.color }}>{fmt.code}</span>
                       </div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#E8E3D8' }}>
                           {fmt.label}
                         </div>
-                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 1 }}>
+                        <div style={{ fontSize: 11, color: '#6A6660', marginTop: 1 }}>
                           {DAYS[d]} · {post.time.replace(':', 'h')} · Instagram
                         </div>
                       </div>
                       {/* Botão editar */}
                       <button onClick={() => { setSelectedDay(d); setActiveTab('plan'); }}
-                        style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: '#1f2937', color: '#9ca3af', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
+                        style={{ width: 32, height: 32, borderRadius: 8, border: 'none', background: '#181818', color: '#6A6660', fontSize: 13, cursor: 'pointer', flexShrink: 0 }}>
                         ✏️
                       </button>
                     </div>
@@ -270,10 +270,10 @@ export default function Redes() {
               // Estado vazio
               <div style={{ textAlign: 'center', padding: '32px 0' }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>📸</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#9ca3af', marginBottom: 6 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#6A6660', marginBottom: 6 }}>
                   Nenhum post planeado
                 </div>
-                <div style={{ fontSize: 12, color: '#4b5563' }}>
+                <div style={{ fontSize: 12, color: '#3A3A38' }}>
                   Toca num dia da grelha para escolher o formato
                 </div>
               </div>
@@ -290,10 +290,10 @@ export default function Redes() {
             {usedFormatIds.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '32px 0' }}>
                 <div style={{ fontSize: 32, marginBottom: 12 }}>🎬</div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#9ca3af', marginBottom: 6 }}>
+                <div style={{ fontSize: 14, fontWeight: 500, color: '#6A6660', marginBottom: 6 }}>
                   Sem formatos atribuídos
                 </div>
-                <div style={{ fontSize: 12, color: '#4b5563' }}>
+                <div style={{ fontSize: 12, color: '#3A3A38' }}>
                   Define os posts na aba <strong style={{ color: '#fff' }}>Plano</strong> para ver o que gravar.
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function Redes() {
                   .map(([d, p]) => `${DAYS[Number(d)]} ${p!.time.replace(':', 'h')}`);
 
                 return (
-                  <div key={id} style={{ background: '#111118', border: `1px solid ${fmt.color}30`, borderRadius: 14, overflow: 'hidden' }}>
+                  <div key={id} style={{ background: '#141414', border: `0.5px solid ${fmt.color}20`, borderRadius: 14, overflow: 'hidden' }}>
                     {/* Cabeçalho */}
                     <div style={{ padding: '12px 16px', borderBottom: `1px solid ${fmt.color}20`, display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 36, height: 36, borderRadius: 9, background: fmt.color, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -315,7 +315,7 @@ export default function Redes() {
                       </div>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{fmt.label}</div>
-                        <div style={{ fontSize: 11, color: '#6b7280' }}>{days.join(' · ')} · {fmt.duration}</div>
+                        <div style={{ fontSize: 11, color: '#6A6660' }}>{days.join(' · ')} · {fmt.duration}</div>
                       </div>
                     </div>
                     {/* Guia */}
@@ -339,13 +339,13 @@ export default function Redes() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* Barra de progresso */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-              <span style={{ fontSize: 13, color: '#9ca3af' }}>Progresso da semana</span>
-              <span style={{ fontSize: 13, fontWeight: 700, color: progress === 100 ? '#4ade80' : '#60a5fa' }}>
+              <span style={{ fontSize: 13, color: '#6A6660' }}>Progresso da semana</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: progress === 100 ? '#7A9B6E' : '#C4A96B' }}>
                 {doneCount}/{allCheckItems.length}
               </span>
             </div>
-            <div style={{ height: 5, borderRadius: 4, background: '#1f2937', marginBottom: 4 }}>
-              <div style={{ height: '100%', borderRadius: 4, background: progress === 100 ? '#10b981' : '#3b82f6', width: `${progress}%`, transition: 'width 0.4s' }} />
+            <div style={{ height: 5, borderRadius: 4, background: '#1A1A1A', marginBottom: 4 }}>
+              <div style={{ height: '100%', borderRadius: 4, background: progress === 100 ? '#7A9B6E' : '#7A9B6E', width: `${progress}%`, transition: 'width 0.4s' }} />
             </div>
 
             {usedFormatIds.length === 0 && (
@@ -357,7 +357,7 @@ export default function Redes() {
             )}
 
             {/* Base */}
-            <ChecklistSection title="Base — toda semana" color="#60a5fa"
+            <ChecklistSection title="Base — toda semana" color="#7A9B6E"
               items={REDES_CHECKLIST.base} weekId={weekId} checkMap={checkMap} onToggle={toggleCheck} />
 
             {/* Por formato */}
@@ -409,11 +409,11 @@ function AssignPanel({
   }
 
   return (
-    <div style={{ background: '#111118', border: '1px solid #374151', borderRadius: 14, padding: 16 }}>
+    <div style={{ background: '#141414', border: '0.5px solid #2E2E2E', borderRadius: 14, padding: 16 }}>
       {/* Cabeçalho */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{dayLabel}</div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6b7280', fontSize: 16 }}>✕</button>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6A6660', fontSize: 16 }}>✕</button>
       </div>
 
       {/* Seletor de formatos — scroll horizontal */}
@@ -426,13 +426,13 @@ function AssignPanel({
                 style={{
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
                   padding: '8px 12px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  background: isSel ? fmt.color : '#1f2937',
+                  background: isSel ? fmt.color : '#181818',
                   minWidth: 56,
                   boxShadow: isSel ? `0 0 12px ${fmt.color}60` : undefined,
                   transition: 'all 0.15s',
                 }}>
                 <span style={{ fontSize: 12, fontWeight: 900, color: isSel ? '#fff' : fmt.color }}>{fmt.code}</span>
-                <span style={{ fontSize: 9, color: isSel ? 'rgba(255,255,255,0.8)' : '#6b7280', whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 9, color: isSel ? 'rgba(255,255,255,0.8)' : '#6A6660', whiteSpace: 'nowrap' }}>
                   {fmt.type}
                 </span>
               </button>
@@ -450,11 +450,11 @@ function AssignPanel({
 
       {/* Hora de publicação */}
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 14 }}>
-        <span style={{ fontSize: 12, color: '#6b7280', flexShrink: 0 }}>Hora:</span>
+        <span style={{ fontSize: 12, color: '#6A6660', flexShrink: 0 }}>Hora:</span>
         <input type="time" value={time} onChange={(e) => setTime(e.target.value)}
           style={{
             flex: 1, padding: '9px 12px', borderRadius: 9,
-            background: '#1f2937', color: '#fff', border: '1px solid #374151',
+            background: '#181818', color: '#F5F0E8', border: '0.5px solid #2E2E2E',
             fontSize: 14, outline: 'none',
           }} />
       </div>
@@ -466,8 +466,8 @@ function AssignPanel({
           disabled={!selFormatId}
           style={{
             flex: 1, height: 44, borderRadius: 10, border: 'none', fontWeight: 700, fontSize: 13, cursor: selFormatId ? 'pointer' : 'not-allowed',
-            background: selFormatId ? (selFmt?.color ?? '#2563eb') : '#1f2937',
-            color: selFormatId ? '#fff' : '#4b5563',
+            background: selFormatId ? (selFmt?.color ?? '#C4A96B') : '#181818',
+            color: selFormatId ? '#0A0A0A' : '#3A3A38',
           }}>
           Confirmar
         </button>
@@ -494,7 +494,7 @@ function GuideRow({ icon, label, text, color }: { icon: string; label: string; t
         <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color, marginRight: 6 }}>
           {label}
         </span>
-        <span style={{ fontSize: 12, color: '#9ca3af' }}>{text}</span>
+        <span style={{ fontSize: 12, color: '#6A6660' }}>{text}</span>
       </div>
     </div>
   );
@@ -514,16 +514,16 @@ function ChecklistSection({
 
   return (
     <div style={{
-      background: allDone ? 'rgba(6,78,59,0.08)' : '#111118',
-      border: `1px solid ${allDone ? 'rgba(16,185,129,0.2)' : '#1f2937'}`,
+      background: allDone ? 'rgba(6,78,59,0.08)' : '#141414',
+      border: `0.5px solid ${allDone ? 'rgba(122,155,110,0.2)' : '#242424'}`,
       borderRadius: 14, overflow: 'hidden',
     }}>
-      <div style={{ padding: '10px 14px', borderBottom: '1px solid #1f2937', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ padding: '10px 14px', borderBottom: '0.5px solid #1A1A1A', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 10, height: 10, borderRadius: 3, background: color, flexShrink: 0 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#e5e7eb' }}>{title}</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#E8E3D8' }}>{title}</span>
         </div>
-        <span style={{ fontSize: 10, fontWeight: 700, color: allDone ? '#4ade80' : '#4b5563' }}>{doneHere}/{items.length}</span>
+        <span style={{ fontSize: 10, fontWeight: 700, color: allDone ? '#7A9B6E' : '#3A3A38' }}>{doneHere}/{items.length}</span>
       </div>
       <div style={{ padding: '8px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {items.map((item) => {
@@ -533,18 +533,18 @@ function ChecklistSection({
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '9px 10px', borderRadius: 10, cursor: 'pointer',
-                border: 'none', background: done ? 'rgba(6,78,59,0.12)' : 'transparent',
+                border: 'none', background: done ? 'rgba(122,155,110,0.1)' : 'transparent',
                 textAlign: 'left', minHeight: 40, transition: 'background 0.15s',
               }}>
               <div style={{
                 width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                border: `2px solid ${done ? color : '#374151'}`,
+                border: `2px solid ${done ? color : '#2E2E2E'}`,
                 background: done ? color : 'transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 {done && <span style={{ color: '#fff', fontSize: 10, fontWeight: 900 }}>✓</span>}
               </div>
-              <span style={{ fontSize: 13, color: done ? '#6b7280' : '#d1d5db', textDecoration: done ? 'line-through' : undefined }}>
+              <span style={{ fontSize: 13, color: done ? '#6A6660' : '#E8E3D8', textDecoration: done ? 'line-through' : undefined }}>
                 {item.text}
               </span>
             </button>
@@ -556,7 +556,7 @@ function ChecklistSection({
 }
 
 const navBtnStyle: React.CSSProperties = {
-  minWidth: 40, minHeight: 40, background: '#1f2937', color: '#9ca3af',
+  minWidth: 40, minHeight: 40, background: '#181818', color: '#9A9590',
   border: 'none', borderRadius: 10, fontSize: 20, cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };

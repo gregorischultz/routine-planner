@@ -245,60 +245,52 @@ export default function Financas() {
 
   const cellInput = (color: string): React.CSSProperties => ({
     width: 66, textAlign: 'right', padding: '4px 6px',
-    background: isReadOnly ? 'rgba(31,41,55,0.2)' : 'rgba(31,41,55,0.5)',
-    color: isReadOnly ? '#6b7280' : color,
-    border: '1px solid rgba(55,65,81,0.4)',
+    background: isReadOnly ? 'rgba(24,24,24,0.3)' : 'rgba(24,24,24,0.5)',
+    color: isReadOnly ? '#6A6660' : color,
+    border: '0.5px solid rgba(42,42,42,0.4)',
     borderRadius: 7, fontSize: 12, fontFamily: 'inherit', outline: 'none',
     cursor: isReadOnly ? 'default' : 'text',
   });
 
   const catColor = (catId: string) =>
-    FINANCAS_CATEGORIES.find((c) => c.id === catId)?.color ?? '#60a5fa';
+    FINANCAS_CATEGORIES.find((c) => c.id === catId)?.color ?? '#C4A96B';
 
   // ── Render ────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ paddingTop: 16, paddingBottom: 24 }}>
+    <div style={{ paddingTop: 16, paddingBottom: 24, background: '#0A0A0A', minHeight: '100vh' }}>
 
       {/* ── Cabeçalho com seletor de ano ───────────────────────────── */}
       <div style={{ padding: '0 16px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: '#fff', margin: 0 }}>Finanças</h2>
+            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 500, color: '#F5F0E8', margin: 0 }}>Finanças</h2>
             {/* Badge: ano ativo vs. arquivado */}
             {isReadOnly ? (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#9ca3af', background: '#1f2937', padding: '2px 8px', borderRadius: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 500, color: '#9A9590', background: '#181818', padding: '2px 8px', borderRadius: 6 }}>
                 Archivé
               </span>
             ) : (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#4ade80', background: 'rgba(6,78,59,0.2)', padding: '2px 8px', borderRadius: 6 }}>
+              <span style={{ fontSize: 10, fontWeight: 500, color: '#7A9B6E', background: 'rgba(6,78,59,0.2)', padding: '2px 8px', borderRadius: 6 }}>
                 Ano ativo
               </span>
             )}
           </div>
-          <p style={{ fontSize: 11, color: '#6b7280', marginTop: 4, marginBottom: 0 }}>
+          <p style={{ fontSize: 11, color: '#6A6660', marginTop: 4, marginBottom: 0 }}>
             {isReadOnly ? 'Modo leitura — dados arquivados' : 'Toque no nome para editar · deslize → para os meses'}
           </p>
         </div>
 
         {/* Navegação entre anos */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          {/* Só mostra ← se houver anos anteriores (mínimo = 2024) */}
           {viewYear > 2024 && (
-            <button onClick={() => setViewYear((y) => y - 1)}
-              style={yearNavBtn}>
-              ←
-            </button>
+            <button onClick={() => setViewYear((y) => y - 1)} style={yearNavBtn}>←</button>
           )}
-          <span style={{ fontSize: 16, fontWeight: 800, color: '#fff', minWidth: 44, textAlign: 'center' }}>
+          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, fontWeight: 400, color: '#F5F0E8', minWidth: 44, textAlign: 'center' }}>
             {viewYear}
           </span>
-          {/* Só mostra → até o ano ativo */}
           {viewYear < activeYear && (
-            <button onClick={() => setViewYear((y) => y + 1)}
-              style={yearNavBtn}>
-              →
-            </button>
+            <button onClick={() => setViewYear((y) => y + 1)} style={yearNavBtn}>→</button>
           )}
         </div>
       </div>
@@ -310,8 +302,8 @@ export default function Financas() {
             style={{
               display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer',
               padding: '10px 16px', borderRadius: 12,
-              background: 'transparent', border: '1px dashed #374151',
-              color: '#6b7280', fontSize: 12, fontWeight: 600,
+              background: 'transparent', border: '0.5px dashed #242424',
+              color: '#6A6660', fontSize: 12, fontWeight: 500,
             }}>
             <span>📦</span>
             Arquivar {viewYear} e iniciar {activeYear + 1}
@@ -321,12 +313,12 @@ export default function Financas() {
 
       {/* ── ENTRÉES ────────────────────────────────────────────────── */}
       <div style={{ padding: '0 16px 16px' }}>
-        <TableBlock header="Entrées d'argent" headerColor="#60a5fa">
+        <TableBlock header="Entrées d'argent" headerColor="#7A9B6E">
           <TableHead cols={COL_HEADERS} />
           <tbody>
             {/* Salario */}
             <tr>
-              <Td sticky style={{ color: '#e5e7eb', fontWeight: 600 }}>Salario</Td>
+              <Td sticky style={{ color: '#E8E3D8', fontWeight: 600 }}>Salario</Td>
               {COL_HEADERS.map((_, i) => (
                 <td key={i} style={{ padding: '5px 6px', textAlign: 'right' }}>
                   <input type="text" inputMode="decimal" value={data.salario[String(i)] ?? ''}
@@ -338,18 +330,18 @@ export default function Financas() {
             </tr>
             {/* Gastos mensais (calculado) */}
             <tr>
-              <Td sticky style={{ color: '#9ca3af' }}>Gastos mensais</Td>
+              <Td sticky style={{ color: '#9A9590' }}>Gastos mensais</Td>
               {totalVals.map((t, i) => (
-                <td key={i} style={{ padding: '5px 6px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: t > 0 ? '#f97316' : '#4b5563' }}>
+                <td key={i} style={{ padding: '5px 6px', textAlign: 'right', fontSize: 12, fontWeight: 600, color: t > 0 ? '#f97316' : '#3A3A38' }}>
                   {t > 0 ? `${t.toFixed(0)} €` : '—'}
                 </td>
               ))}
             </tr>
             {/* Sobra (calculado, verde/vermelho) */}
             <tr>
-              <Td sticky style={{ color: '#e5e7eb', fontWeight: 700 }}>Sobra</Td>
+              <Td sticky style={{ color: '#E8E3D8', fontWeight: 700 }}>Sobra</Td>
               {sobraVals.map((s, i) => (
-                <td key={i} style={{ padding: '5px 6px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: salarioVals[i] > 0 ? (s >= 0 ? '#22c55e' : '#ef4444') : '#4b5563' }}>
+                <td key={i} style={{ padding: '5px 6px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: salarioVals[i] > 0 ? (s >= 0 ? '#7A9B6E' : '#B87355') : '#3A3A38' }}>
                   {salarioVals[i] > 0 ? `${s.toFixed(0)} €` : '—'}
                 </td>
               ))}
@@ -371,8 +363,8 @@ export default function Financas() {
               return (
                 <React.Fragment key={cat.id}>
                   {/* Linha da categoria (toggle + nome editável) */}
-                  <tr style={{ background: '#0f172a', borderTop: '1px solid #1f2937' }}>
-                    <td style={{ padding: '8px 6px 8px 14px', position: 'sticky', left: 0, background: '#0f172a', minWidth: 160 }}>
+                  <tr style={{ background: '#0D0D0D', borderTop: '0.5px solid #1E1E1E' }}>
+                    <td style={{ padding: '8px 6px 8px 14px', position: 'sticky', left: 0, background: '#0D0D0D', minWidth: 160 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <button onClick={() => setCollapsed((p) => ({ ...p, [cat.id]: !p[cat.id] }))}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color, padding: '2px 0', flexShrink: 0 }}>
@@ -384,7 +376,7 @@ export default function Financas() {
                             onChange={(e) => setEditingCat({ catId: cat.id, val: e.target.value })}
                             onBlur={saveCatName}
                             onKeyDown={(e) => e.key === 'Enter' && saveCatName()}
-                            style={{ fontSize: 12, fontWeight: 700, color, background: '#1f2937', border: `1px solid ${color}50`, borderRadius: 6, padding: '2px 6px', width: 110, outline: 'none' }} />
+                            style={{ fontSize: 12, fontWeight: 700, color, background: '#181818', border: `1px solid ${color}50`, borderRadius: 6, padding: '2px 6px', width: 110, outline: 'none' }} />
                         ) : (
                           <span
                             onClick={() => !isReadOnly && setEditingCat({ catId: cat.id, val: getCatName(cat.id) })}
@@ -397,7 +389,7 @@ export default function Financas() {
                     {COL_HEADERS.map((_, i) => {
                       const t = getCatTotal(cat.id, i);
                       return (
-                        <td key={i} style={{ padding: '5px 6px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: t > 0 ? color : '#374151' }}>
+                        <td key={i} style={{ padding: '5px 6px', textAlign: 'right', fontSize: 11, fontWeight: 700, color: t > 0 ? color : '#2E2E2E' }}>
                           {t > 0 ? `${t.toFixed(0)} €` : '—'}
                         </td>
                       );
@@ -406,26 +398,26 @@ export default function Financas() {
 
                   {/* Linhas dos itens */}
                   {!isCollapsed && items.map((item, idx) => (
-                    <tr key={`${cat.id}-${idx}`} style={{ borderBottom: '1px solid rgba(31,41,55,0.5)' }}>
-                      <td style={{ padding: '5px 6px 5px 30px', position: 'sticky', left: 0, background: '#111118', minWidth: 160 }}>
+                    <tr key={`${cat.id}-${idx}`} style={{ borderBottom: '0.5px solid rgba(31,41,55,0.4)' }}>
+                      <td style={{ padding: '5px 6px 5px 30px', position: 'sticky', left: 0, background: '#0F0F0F', minWidth: 160 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           {!isReadOnly && editingItem?.catId === cat.id && editingItem.idx === idx ? (
                             <input autoFocus value={editingItem.val}
                               onChange={(e) => setEditingItem({ ...editingItem, val: e.target.value })}
                               onBlur={saveItemName}
                               onKeyDown={(e) => e.key === 'Enter' && saveItemName()}
-                              style={{ fontSize: 12, color, background: '#1f2937', border: `1px solid ${color}50`, borderRadius: 6, padding: '2px 6px', width: 100, outline: 'none' }} />
+                              style={{ fontSize: 12, color, background: '#181818', border: `1px solid ${color}50`, borderRadius: 6, padding: '2px 6px', width: 100, outline: 'none' }} />
                           ) : (
                             <span
                               onClick={() => !isReadOnly && setEditingItem({ catId: cat.id, idx, val: item })}
-                              style={{ fontSize: 12, color: '#9ca3af', cursor: isReadOnly ? 'default' : 'text', flex: 1 }}>
+                              style={{ fontSize: 12, color: '#9A9590', cursor: isReadOnly ? 'default' : 'text', flex: 1 }}>
                               {item}
                             </span>
                           )}
                           {/* Botão × — escondido em modo leitura */}
                           {!isReadOnly && (
                             <button onClick={() => deleteItem(cat.id, idx)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#374151', fontSize: 13, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#3A3A38', fontSize: 13, padding: '0 2px', lineHeight: 1, flexShrink: 0 }}
                               title="Supprimer">
                               ×
                             </button>
@@ -447,8 +439,8 @@ export default function Financas() {
 
                   {/* Linha "Adicionar item" — escondida em modo leitura */}
                   {!isCollapsed && !isReadOnly && (
-                    <tr style={{ borderBottom: '1px solid #1f2937' }}>
-                      <td colSpan={COL_HEADERS.length + 1} style={{ padding: '6px 14px 6px 30px', background: '#0c0c14' }}>
+                    <tr style={{ borderBottom: '0.5px solid #1A1A1A' }}>
+                      <td colSpan={COL_HEADERS.length + 1} style={{ padding: '6px 14px 6px 30px', background: '#0A0A0A' }}>
                         {addingTo === cat.id ? (
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <input ref={addInputRef} autoFocus value={newItemName}
@@ -458,13 +450,13 @@ export default function Financas() {
                                 if (e.key === 'Escape') { setAddingTo(null); setNewItemName(''); }
                               }}
                               placeholder="Nom du nouveau poste..."
-                              style={{ flex: 1, fontSize: 12, padding: '6px 10px', background: '#1f2937', color: '#fff', border: `1px solid ${color}50`, borderRadius: 8, outline: 'none' }} />
+                              style={{ flex: 1, fontSize: 12, padding: '6px 10px', background: '#181818', color: '#fff', border: `1px solid ${color}50`, borderRadius: 8, outline: 'none' }} />
                             <button onClick={() => addItem(cat.id)}
                               style={{ height: 32, padding: '0 12px', borderRadius: 8, background: color, border: 'none', color: '#fff', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}>
                               ✓
                             </button>
                             <button onClick={() => { setAddingTo(null); setNewItemName(''); }}
-                              style={{ height: 32, padding: '0 10px', borderRadius: 8, background: '#1f2937', border: 'none', color: '#9ca3af', fontSize: 14, cursor: 'pointer' }}>
+                              style={{ height: 32, padding: '0 10px', borderRadius: 8, background: '#181818', border: 'none', color: '#9A9590', fontSize: 14, cursor: 'pointer' }}>
                               ✕
                             </button>
                           </div>
@@ -483,10 +475,10 @@ export default function Financas() {
             })}
 
             {/* Total geral */}
-            <tr style={{ borderTop: '2px solid #374151', background: '#0f172a' }}>
-              <Td sticky style={{ color: '#e5e7eb', fontWeight: 800, background: '#0f172a' }}>Total sorties</Td>
+            <tr style={{ borderTop: '0.5px solid #242424', background: '#0D0D0D' }}>
+              <Td sticky style={{ color: '#F5F0E8', fontWeight: 700, background: '#0D0D0D' }}>Total sorties</Td>
               {totalVals.map((t, i) => (
-                <td key={i} style={{ padding: '10px 6px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: t > 0 ? '#ef4444' : '#4b5563' }}>
+                <td key={i} style={{ padding: '10px 6px', textAlign: 'right', fontSize: 12, fontWeight: 700, color: t > 0 ? '#B87355' : '#3A3A38' }}>
                   {t > 0 ? `${t.toFixed(0)} €` : '—'}
                 </td>
               ))}
@@ -496,7 +488,7 @@ export default function Financas() {
       </div>
 
       {/* Hint */}
-      <p style={{ textAlign: 'center', fontSize: 11, color: '#374151', marginTop: 16, padding: '0 16px' }}>
+      <p style={{ textAlign: 'center', fontSize: 11, color: '#3A3A38', marginTop: 16, padding: '0 16px' }}>
         {isReadOnly
           ? `Visualizando dados de ${viewYear} — somente leitura`
           : 'Toque no nome de uma categoria ou item para renomear · × para apagar · + para adicionar'}
@@ -508,16 +500,16 @@ export default function Financas() {
 // ── Sub-componentes ────────────────────────────────────────────────────────
 
 const yearNavBtn: React.CSSProperties = {
-  width: 32, height: 32, borderRadius: 8, background: '#1f2937',
-  border: 'none', color: '#9ca3af', fontSize: 16, cursor: 'pointer',
+  width: 32, height: 32, borderRadius: 8, background: '#181818',
+  border: 'none', color: '#9A9590', fontSize: 16, cursor: 'pointer',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
 };
 
 function TableBlock({ children, header, headerColor }: { children: React.ReactNode; header: string; headerColor: string }) {
   return (
-    <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ padding: '10px 16px', background: '#0f172a', borderBottom: '1px solid #1f2937' }}>
-        <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: headerColor }}>{header}</span>
+    <div style={{ background: '#141414', border: '0.5px solid #1E1E1E', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ padding: '10px 16px', background: '#0D0D0D', borderBottom: '0.5px solid #1E1E1E' }}>
+        <span style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em', color: headerColor }}>{header}</span>
       </div>
       <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
         <table style={{ minWidth: 900, width: '100%', borderCollapse: 'collapse' }}>
@@ -531,10 +523,10 @@ function TableBlock({ children, header, headerColor }: { children: React.ReactNo
 function TableHead({ cols }: { cols: string[] }) {
   return (
     <thead>
-      <tr style={{ borderBottom: '1px solid #1f2937' }}>
-        <th style={{ textAlign: 'left', padding: '8px 14px', fontSize: 11, color: '#6b7280', position: 'sticky', left: 0, background: '#111118', minWidth: 160 }}>Item</th>
+      <tr style={{ borderBottom: '0.5px solid #1E1E1E' }}>
+        <th style={{ textAlign: 'left', padding: '8px 14px', fontSize: 11, color: '#6A6660', position: 'sticky', left: 0, background: '#141414', minWidth: 160 }}>Item</th>
         {cols.map((h, i) => (
-          <th key={i} style={{ textAlign: 'right', padding: '8px 6px', fontSize: 11, color: '#6b7280', minWidth: 74 }}>{h}</th>
+          <th key={i} style={{ textAlign: 'right', padding: '8px 6px', fontSize: 11, color: '#6A6660', minWidth: 74 }}>{h}</th>
         ))}
       </tr>
     </thead>
@@ -543,7 +535,7 @@ function TableHead({ cols }: { cols: string[] }) {
 
 function Td({ children, sticky, style }: { children: React.ReactNode; sticky?: boolean; style?: React.CSSProperties }) {
   return (
-    <td style={{ padding: '8px 14px', fontSize: 13, ...(sticky ? { position: 'sticky', left: 0, background: '#111118' } : {}), ...style }}>
+    <td style={{ padding: '8px 14px', fontSize: 13, ...(sticky ? { position: 'sticky', left: 0, background: '#141414' } : {}), ...style }}>
       {children}
     </td>
   );

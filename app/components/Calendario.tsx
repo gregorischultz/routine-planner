@@ -161,12 +161,12 @@ export default function Calendario({ onDaySelect }: Props) {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div style={{ padding: '16px 16px 32px', maxWidth: 520, margin: '0 auto' }}>
+    <div style={{ padding: '16px 16px 32px', maxWidth: 520, margin: '0 auto', background: '#0A0A0A', minHeight: '100vh' }}>
 
       {/* ── Navegação entre meses ─────────────────────────────── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <button onClick={prevMonth} style={navBtnStyle}>←</button>
-        <h2 style={{ fontSize: 18, fontWeight: 800, color: '#fff', margin: 0 }}>
+        <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, fontWeight: 500, color: '#F5F0E8', margin: 0 }}>
           {MONTH_NAMES[viewMonth]} {viewYear}
         </h2>
         <button onClick={nextMonth} style={navBtnStyle}>→</button>
@@ -205,14 +205,14 @@ export default function Calendario({ onDaySelect }: Props) {
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 padding: '6px 2px', borderRadius: 12, cursor: 'pointer',
-                background: isToday ? '#2563eb' : '#111118',
-                border: `1px solid ${isToday ? '#3b82f6' : '#1f2937'}`,
+                background: isToday ? '#1E3A1E' : '#141414',
+                border: `0.5px solid ${isToday ? '#7A9B6E' : '#1E1E1E'}`,
                 opacity: isPast ? 0.45 : 1,
                 minHeight: 64,
               } as React.CSSProperties}>
 
               {/* Número do dia */}
-              <span style={{ fontSize: 12, fontWeight: 600, color: isToday ? '#fff' : '#e5e7eb' }}>
+              <span style={{ fontSize: 12, fontWeight: 500, color: isToday ? '#C4A96B' : '#E8E3D8' }}>
                 {date.getDate()}
               </span>
               {/* Ícone do sport */}
@@ -278,7 +278,7 @@ export default function Calendario({ onDaySelect }: Props) {
       {/* ── Botão exportar ICS ────────────────────────────────── */}
       <div style={{ marginTop: 20 }}>
         <button onClick={exportICS}
-          style={{ width: '100%', padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: '#111118', border: '1px solid #1f2937', color: '#60a5fa' }}>
+          style={{ width: '100%', padding: '12px 0', borderRadius: 12, fontSize: 13, fontWeight: 500, cursor: 'pointer', background: '#141414', border: '0.5px solid #242424', color: '#C4A96B' }}>
           📅 Exporter la semaine (.ics)
         </button>
         <p style={{ fontSize: 11, textAlign: 'center', color: '#4b5563', marginTop: 6 }}>
@@ -304,7 +304,7 @@ export default function Calendario({ onDaySelect }: Props) {
           </button>
         ) : (
           /* Formulário aberto */
-          <div style={{ background: '#111118', border: '1px solid #1f2937', borderRadius: 14, padding: 16 }}>
+          <div style={{ background: '#141414', border: '0.5px solid #242424', borderRadius: 14, padding: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#e5e7eb', marginBottom: 14 }}>
               Nouvel événement
             </div>
@@ -315,7 +315,7 @@ export default function Calendario({ onDaySelect }: Props) {
                 <button key={t} onClick={() => setFormType(t)}
                   style={{
                     flex: 1, padding: '9px 0', borderRadius: 10, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 12,
-                    background: formType === t ? (t === 'rdv' ? '#1d4ed8' : '#92400e') : '#1f2937',
+                    background: formType === t ? (t === 'rdv' ? '#1d4ed8' : '#92400e') : '#181818',
                     color: formType === t ? '#fff' : '#6b7280',
                   }}>
                   {t === 'todo' ? '✅ À faire' : '📅 Rendez-vous'}
@@ -355,9 +355,9 @@ export default function Calendario({ onDaySelect }: Props) {
                 disabled={!formTitle.trim() || !formDate}
                 style={{
                   flex: 1, padding: '11px 0', borderRadius: 10, border: 'none', cursor: 'pointer',
-                  fontWeight: 700, fontSize: 13,
-                  background: (!formTitle.trim() || !formDate) ? '#1f2937' : '#2563eb',
-                  color: (!formTitle.trim() || !formDate) ? '#4b5563' : '#fff',
+                  fontWeight: 600, fontSize: 13,
+                  background: (!formTitle.trim() || !formDate) ? '#181818' : '#C4A96B',
+                  color: (!formTitle.trim() || !formDate) ? '#4b5563' : '#0A0A0A',
                 }}>
                 Ajouter
               </button>
@@ -389,7 +389,7 @@ export default function Calendario({ onDaySelect }: Props) {
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10,
                     padding: '10px 14px', borderRadius: 12,
-                    background: '#111118', border: `1px solid ${color}30`,
+                    background: '#141414', border: `0.5px solid ${color}20`,
                     borderLeft: `3px solid ${color}`,
                   }}>
                   {/* Ponto colorido por tipo */}
@@ -423,12 +423,12 @@ export default function Calendario({ onDaySelect }: Props) {
 
 const navBtnStyle: React.CSSProperties = {
   padding: '8px 14px', borderRadius: 10, fontSize: 16, cursor: 'pointer',
-  background: '#1f2937', color: '#9ca3af', border: 'none',
+  background: '#181818', color: '#9A9590', border: 'none',
 };
 
 const inputStyle: React.CSSProperties = {
   width: '100%', padding: '11px 12px', borderRadius: 10,
-  background: '#1f2937', color: '#fff',
-  border: '1px solid #374151', fontSize: 13, outline: 'none',
+  background: '#181818', color: '#F5F0E8',
+  border: '0.5px solid #2E2E2E', fontSize: 13, outline: 'none',
   boxSizing: 'border-box',
 };

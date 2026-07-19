@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap');
 
 :root {
   --bg:           #0A0A0A;
@@ -17,8 +16,8 @@
   --accent-study: #7A9B6E;
   --accent-read:  #8B82A8;
   --accent-therapy: #6B8FA8;
-  --serif: 'Playfair Display', Georgia, serif;
-  --sans:  'DM Sans', system-ui, sans-serif;
+  --serif: var(--font-playfair), Georgia, serif;
+  --sans:  var(--font-dm-sans), system-ui, sans-serif;
 }
 
 * {
